@@ -1,0 +1,22 @@
+# Render Blueprint: Render → New → Blueprint → выбрать репозиторий
+services:
+  - type: web
+    name: bolakay-direct
+    runtime: node
+    plan: free            # спит без посетителей; для продаж → starter
+    region: frankfurt     # ближе всего к Supabase (eu-central-1) и Ташкенту
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /uz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      # Публичные значения (попадают в браузер), секретов здесь нет
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://hixmovjvfxrxtqittccz.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        sync: false       # Render спросит значение при создании (из .env.local)
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false       # например https://bolakay-direct.onrender.com
