@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo";
 import { Wave } from "@/components/Backdrop";
 import { LangSwitch } from "@/components/LangSwitch";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AuthLinkForwarder } from "@/components/AuthLinkForwarder";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { t } from "@/lib/i18n";
 import { isLang, LANGS } from "@/lib/types";
@@ -50,6 +51,7 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="flex min-h-dvh flex-col">
+        <AuthLinkForwarder />
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 btn btn-primary">
           {{ uz: "Asosiy qismga o‘tish", ru: "К содержимому", en: "Skip to content" }[lang]}
         </a>
