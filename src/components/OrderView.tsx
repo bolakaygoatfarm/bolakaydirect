@@ -66,7 +66,7 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
       <span className={`chip mt-2 px-3 py-1.5 text-sm ${TONE[order.status]}`}>{d[`st_${order.status}`]}</span>
 
       {active && (
-        <section className="mt-5 rounded-[1.5rem] bg-gradient-to-br from-brand-600 to-brand-700 p-6 text-center text-white shadow-[var(--shadow-float)]">
+        <section className="grain relative mt-5 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-6 text-center text-white shadow-[var(--shadow-float)]">
           <p className="text-sm font-bold uppercase tracking-widest text-white/75">{d.pickup_code}</p>
           <PickupCode code={order.pickup_code} lang={lang} />
           <p className="mt-3 text-sm text-white/85">{d.pickup_code_hint}</p>
@@ -107,7 +107,7 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
         {order.items.map((i, n) => (
           <div key={n} className="flex items-center justify-between gap-3 p-4 text-sm">
             <div>
-              <p className="font-extrabold">{lang === "uz" ? i.name_uz : i.name_ru} · {i.size_label}</p>
+              <p className="font-extrabold">{pick(i, "name", lang)} · {i.size_label}</p>
               <p className="text-xs text-muted">{d.produced}: {shortDate(i.produced_at, lang)} · {d.expires}: {shortDate(i.expires_at, lang)}</p>
             </div>
             <p className="shrink-0 font-bold">{i.qty} × {money(i.price, lang)}</p>

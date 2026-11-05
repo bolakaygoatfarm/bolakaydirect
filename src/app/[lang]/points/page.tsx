@@ -8,7 +8,7 @@ import { PointCard } from "@/components/PointCard";
 export async function generateMetadata({ params }: PageProps<"/[lang]/points">): Promise<Metadata> {
   const { lang } = await params;
   if (!isLang(lang)) return {};
-  return { title: t(lang).points_title, alternates: { canonical: `/${lang}/points`, languages: { uz: "/uz/points", ru: "/ru/points" } } };
+  return { title: t(lang).points_title, alternates: { canonical: `/${lang}/points`, languages: { uz: "/uz/points", ru: "/ru/points", en: "/en/points" } } };
 }
 
 export default async function PointsPage({ params }: PageProps<"/[lang]/points">) {

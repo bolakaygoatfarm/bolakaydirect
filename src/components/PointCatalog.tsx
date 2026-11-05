@@ -60,7 +60,7 @@ export function PointCatalog({ lang, code, products, disabled }: { lang: Lang; c
         const b = p?.batches[0];
         if (!p || !b) {
           const it = o.items.find((i) => i.product_id === pid)!;
-          missing.push(`${lang === "uz" ? it.name_uz : it.name_ru} ${it.size_label}`);
+          missing.push(`${pick(it, "name", lang)} ${it.size_label}`);
           continue;
         }
         const ex = next.find((l) => l.batch_id === b.batch_id);
@@ -111,7 +111,7 @@ export function PointCatalog({ lang, code, products, disabled }: { lang: Lang; c
             onClick={() => setCat(c)}
             className={`chip shrink-0 px-4 py-2.5 text-sm transition ${cat === c ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-700"}`}
           >
-            {c === "all" ? (lang === "uz" ? "Hammasi" : "Все") : d[`cat_${c}`]}
+            {c === "all" ? ({ uz: "Hammasi", ru: "Все", en: "All" }[lang]) : d[`cat_${c}`]}
           </button>
         ))}
       </div>
@@ -233,7 +233,7 @@ function ProductSheet({
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={pick(p, "name", lang)}>
-      <button aria-label={d.close} className="animate-fade absolute inset-0 bg-brand-900/45" onClick={onClose} />
+      <button aria-label={d.close} className="animate-fade absolute inset-0 bg-night/55" onClick={onClose} />
       <div className="animate-sheet relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[1.75rem] bg-white sm:rounded-[1.75rem]">
         <div className="relative">
           <ProductArt category={p.category} image={p.image_url} alt={pick(p, "name", lang)} className="aspect-[16/10] w-full" />

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
 import { ErrorNote, Section } from "./ui";
+import { s, rich } from "./i18n";
 
 interface Status { bot_username: string | null; admin_chat_linked: boolean; site_url: string; linked_customers: number }
 
@@ -39,18 +40,18 @@ export function TelegramSettings() {
     setBusy(true);
     setErr(null);
     setOk(null);
-    const { data: s } = await sb.auth.getSession();
+    const { data: sess } = await sb.auth.getSession();
     try {
       const r = await fetch(`${FUNCTION_URL}/setup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${s.session?.access_token ?? ""}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${sess.session?.access_token ?? ""}` },
         body: JSON.stringify({ site_url: window.location.origin }),
       });
       const res = await r.json().catch(() => ({ ok: false, error: `HTTP ${r.status}` }));
-      if (!res.ok) setErr(SETUP_ERRORS[res.error] ?? `${res.error ?? "Ошибка"}${res.detail ? `: ${res.detail}` : ""}`);
-      else setOk(`Бот @${res.bot_username} подключён. Адрес сайта для ссылок: ${window.location.origin}`);
+      if (!res.ok) setErr(SETUP_ERRORS[res.error] ? s(SETUP_ERRORS[res.error]) : `${res.error ?? s("Ошибка")}${res.detail ? `: ${res.detail}` : ""}`);
+      else setOk(s("Бот @{0} подключён. Адрес сайта для ссылок: {1}", res.bot_username, window.location.origin));
     } catch {
-      setErr("Не удалось связаться с функцией telegram-bot.");
+      setErr(s("Не удалось связаться с функцией telegram-bot."));
     }
     setBusy(false);
     void load();
@@ -63,49 +64,47 @@ export function TelegramSettings() {
     else setCode(data as string);
   }
 
-  if (!st) return <Section title="Telegram-бот"><p className="text-muted">Загрузка…</p><ErrorNote text={err} /></Section>;
+  if (!st) return <Section title={s("Telegram-бот")}><p className="text-muted">{s("Загрузка…")}</p><ErrorNote text={err} /></Section>;
 
   const isLocal = /localhost|127\.0\.0\.1/.test(st.site_url);
 
   return (
-    <Section title="Telegram-бот">
+    <Section title={s("Telegram-бот")}>
       <div className="card grid gap-4 p-4 text-sm">
         <div className="flex flex-wrap gap-2">
           <span className={`chip ${st.bot_username ? "bg-fresh-50 text-fresh" : "bg-aged-50 text-aged"}`}>
-            {st.bot_username ? `Бот: @${st.bot_username}` : "Бот не подключён"}
+            {st.bot_username ? s("Бот: @{0}", st.bot_username) : s("Бот не подключён")}
           </span>
           <span className={`chip ${st.admin_chat_linked ? "bg-fresh-50 text-fresh" : "bg-aged-50 text-aged"}`}>
-            {st.admin_chat_linked ? "Чат администратора подключён" : "Чат администратора не подключён"}
+            {st.admin_chat_linked ? s("Чат администратора подключён") : s("Чат администратора не подключён")}
           </span>
-          <span className="chip bg-brand-50 text-brand-700">Покупателей в боте: {st.linked_customers}</span>
+          <span className="chip bg-brand-50 text-brand-700">{s("Покупателей в боте: {0}", st.linked_customers)}</span>
         </div>
 
         <ol className="grid list-decimal gap-2 pl-5">
-          <li>В Telegram откройте <b>@BotFather</b> → <code>/newbot</code> → задайте имя (например, «BOLAKAY») и username (например, <code>bolakay_direct_bot</code>). Скопируйте токен.</li>
+          <li>{rich(s("В Telegram откройте **@BotFather** → `/newbot` → задайте имя (например, «BOLAKAY») и username (например, `bolakay_direct_bot`). Скопируйте токен."))}</li>
+          <li>{rich(s("Supabase → проект **bolakay-direct** → **Edge Functions → Secrets** → добавьте секрет `TELEGRAM_BOT_TOKEN` со значением токена."))}</li>
           <li>
-            Supabase → проект <b>bolakay-direct</b> → <b>Edge Functions → Secrets</b> → добавьте секрет <code>TELEGRAM_BOT_TOKEN</code> со значением токена.
-          </li>
-          <li>
-            Откройте эту панель на <b>боевом адресе сайта</b> и нажмите кнопку ниже: бот получит webhook, команды и ссылки на сайт.
-            {isLocal && <span className="mt-1 block text-aged">Сейчас адрес сайта — {st.site_url}. С localhost бот будет присылать ссылки текстом: Telegram не принимает кнопки на localhost.</span>}
+            {rich(s("Откройте эту панель на **боевом адресе сайта** и нажмите кнопку ниже: бот получит webhook, команды и ссылки на сайт."))}
+            {isLocal && <span className="mt-1 block text-aged">{s("Сейчас адрес сайта — {0}. С localhost бот будет присылать ссылки текстом: Telegram не принимает кнопки на localhost.", st.site_url)}</span>}
           </li>
         </ol>
         <button className="btn btn-primary w-fit" onClick={connect} disabled={busy}>
-          {busy ? "Подключаем…" : st.bot_username ? "Обновить подключение бота" : "Подключить бота"}
+          {busy ? s("Подключаем…") : st.bot_username ? s("Обновить подключение бота") : s("Подключить бота")}
         </button>
 
         {st.bot_username && (
           <div className="rounded-xl bg-brand-50 p-3">
-            <p className="font-bold">Чат администратора</p>
-            <p className="mt-1 text-muted">Сюда приходят новые заказы и вопросы покупателей. Отвечайте на вопрос через Reply — ответ уйдёт покупателю. Можно подключить личный чат или группу сотрудников.</p>
+            <p className="font-bold">{s("Чат администратора")}</p>
+            <p className="mt-1 text-muted">{s("Сюда приходят новые заказы и вопросы покупателей. Отвечайте на вопрос через Reply — ответ уйдёт покупателю. Можно подключить личный чат или группу сотрудников.")}</p>
             {code ? (
               <div className="mt-2 grid gap-2">
-                <a className="btn btn-primary w-fit" href={`https://t.me/${st.bot_username}?start=admin_${code}`} target="_blank" rel="noopener noreferrer">Подключить личный чат</a>
-                <a className="btn btn-soft w-fit" href={`https://t.me/${st.bot_username}?startgroup=admin_${code}`} target="_blank" rel="noopener noreferrer">Добавить бота в группу</a>
-                <p className="text-xs text-muted">Или отправьте боту команду <code>/admin {code}</code>. Код действует 15 минут.</p>
+                <a className="btn btn-primary w-fit" href={`https://t.me/${st.bot_username}?start=admin_${code}`} target="_blank" rel="noopener noreferrer">{s("Подключить личный чат")}</a>
+                <a className="btn btn-soft w-fit" href={`https://t.me/${st.bot_username}?startgroup=admin_${code}`} target="_blank" rel="noopener noreferrer">{s("Добавить бота в группу")}</a>
+                <p className="text-xs text-muted">{rich(s("Или отправьте боту команду `/admin {0}`. Код действует 15 минут.", code))}</p>
               </div>
             ) : (
-              <button className="btn btn-soft mt-2" onClick={bindCode}>Получить код подключения</button>
+              <button className="btn btn-soft mt-2" onClick={bindCode}>{s("Получить код подключения")}</button>
             )}
           </div>
         )}

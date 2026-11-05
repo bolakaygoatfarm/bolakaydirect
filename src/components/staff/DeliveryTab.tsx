@@ -5,6 +5,7 @@ import { browserClient } from "@/lib/supabase";
 import type { Fridge } from "@/lib/types";
 import { Section, fmtDT } from "./ui";
 import { batchState, type StaffBatch } from "./StockTab";
+import { s } from "./i18n";
 
 interface Preorder {
   id: string;
@@ -44,7 +45,7 @@ export function DeliveryTab({ fridges }: { fridges: Fridge[] }) {
     void load();
   }
 
-  if (!batches) return <p className="mt-5 text-muted">Загрузка…</p>;
+  if (!batches) return <p className="mt-5 text-muted">{s("Загрузка…")}</p>;
 
   return (
     <>
@@ -66,16 +67,16 @@ export function DeliveryTab({ fridges }: { fridges: Fridge[] }) {
           };
         });
         return (
-          <Section key={f.id} title={`${f.name} — маршрутный лист`}>
+          <Section key={f.id} title={s("{0} — маршрутный лист", f.name)}>
             <div className="card overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
                 <thead className="bg-brand-50 text-left text-xs uppercase tracking-wide text-muted">
                   <tr>
-                    <th className="p-3">Товар</th>
-                    <th className="p-3 text-right">Остаток</th>
-                    <th className="p-3 text-right">Резерв</th>
-                    <th className="p-3 text-right">Предзаказы</th>
-                    <th className="p-3 text-right">Забрать (истёк срок)</th>
+                    <th className="p-3">{s("Товар")}</th>
+                    <th className="p-3 text-right">{s("Остаток")}</th>
+                    <th className="p-3 text-right">{s("Резерв")}</th>
+                    <th className="p-3 text-right">{s("Предзаказы")}</th>
+                    <th className="p-3 text-right">{s("Забрать (истёк срок)")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -87,7 +88,7 @@ export function DeliveryTab({ fridges }: { fridges: Fridge[] }) {
                       <td className={`p-3 text-right tabular-nums ${r.pre ? "font-bold text-brand-700" : ""}`}>{r.pre}</td>
                       <td className={`p-3 text-right tabular-nums ${r.pickup ? "font-bold text-danger" : ""}`}>{r.pickup}</td>
                     </tr>
-                  )) : <tr><td className="p-4 text-muted" colSpan={5}>Холодильник пуст, предзаказов нет.</td></tr>}
+                  )) : <tr><td className="p-4 text-muted" colSpan={5}>{s("Холодильник пуст, предзаказов нет.")}</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -99,12 +100,12 @@ export function DeliveryTab({ fridges }: { fridges: Fridge[] }) {
                       <b>{p.products?.name_ru} · {p.products?.size_label} × {p.qty}</b>
                       <span className="text-muted"> · {fmtDT(p.created_at)} · </span>
                       <a className="font-bold text-brand-700" href={`tel:${p.customers?.phone}`}>{p.customers?.phone}</a>
-                      {p.status === "notified" && <span className="chip ml-2 bg-brand-50 text-brand-700">уведомлён</span>}
+                      {p.status === "notified" && <span className="chip ml-2 bg-brand-50 text-brand-700">{s("уведомлён")}</span>}
                     </span>
                     <span className="flex gap-2">
-                      {p.status === "waiting" && <button className="btn btn-soft min-h-9 px-3 text-xs" onClick={() => setStatus(p.id, "notified")}>Уведомлён</button>}
-                      <button className="btn btn-ghost min-h-9 px-3 text-xs" onClick={() => setStatus(p.id, "fulfilled")}>Выполнен</button>
-                      <button className="btn btn-danger min-h-9 px-3 text-xs" onClick={() => setStatus(p.id, "cancelled")}>Отмена</button>
+                      {p.status === "waiting" && <button className="btn btn-soft min-h-9 px-3 text-xs" onClick={() => setStatus(p.id, "notified")}>{s("Уведомлён")}</button>}
+                      <button className="btn btn-ghost min-h-9 px-3 text-xs" onClick={() => setStatus(p.id, "fulfilled")}>{s("Выполнен")}</button>
+                      <button className="btn btn-danger min-h-9 px-3 text-xs" onClick={() => setStatus(p.id, "cancelled")}>{s("Отмена")}</button>
                     </span>
                   </li>
                 ))}
@@ -113,7 +114,7 @@ export function DeliveryTab({ fridges }: { fridges: Fridge[] }) {
           </Section>
         );
       })}
-      <p className="mt-4 text-xs text-muted">Приёмка новых партий и изъятие просрочки — во вкладке «Остатки» выбранной точки.</p>
+      <p className="mt-4 text-xs text-muted">{s("Приёмка новых партий и изъятие просрочки — во вкладке «Остатки» выбранной точки.")}</p>
     </>
   );
 }

@@ -4,10 +4,10 @@ import type { Category } from "@/lib/types";
  * Иллюстрация товара, пока нет фотографий. Если у товара есть image_url — показывается фото.
  */
 const BG: Record<Category, string> = {
-  milk: "from-brand-50 to-brand-100",
-  yogurt: "from-[#f3f7fb] to-[#e3eef9]",
-  butter: "from-[#fff8e6] to-[#fcecc2]",
-  drinks: "from-[#f6efe8] to-[#ead9c6]",
+  milk: "from-[#dcf4fd] to-[#aee3f7]",
+  yogurt: "from-[#ecf8f3] to-[#cbeadc]",
+  butter: "from-[#fff3d1] to-[#fbd98a]",
+  drinks: "from-[#f7ece1] to-[#e6cdb0]",
 };
 
 export function ProductArt({
@@ -30,17 +30,17 @@ export function ProductArt({
       <svg viewBox="0 0 80 80" className="h-3/5 w-3/5 drop-shadow-sm">
         {category === "milk" && (
           <g>
-            <path d="M30 10h20v8l6 10v40a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4V28l6-10Z" fill="#fff" stroke="#1474c4" strokeWidth="2.5" strokeLinejoin="round" />
-            <rect x="29" y="6" width="22" height="7" rx="2" fill="#1474c4" />
-            <rect x="24" y="38" width="32" height="18" fill="#d8eafa" />
-            <text x="40" y="51" textAnchor="middle" fontSize="8" fontWeight="800" fill="#115d9e" fontFamily="sans-serif">MILK</text>
+            <path d="M30 10h20v8l6 10v40a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4V28l6-10Z" fill="#fff" stroke="#0a7bbf" strokeWidth="2.5" strokeLinejoin="round" />
+            <rect x="29" y="6" width="22" height="7" rx="2" fill="#0a7bbf" />
+            <rect x="24" y="38" width="32" height="18" fill="#cdeefb" />
+            <text x="40" y="51" textAnchor="middle" fontSize="8" fontWeight="800" fill="#075f97" fontFamily="sans-serif">MILK</text>
           </g>
         )}
         {category === "yogurt" && (
           <g>
-            <path d="M18 26h44l-5 42a4 4 0 0 1-4 3.5H27a4 4 0 0 1-4-3.5Z" fill="#fff" stroke="#1474c4" strokeWidth="2.5" strokeLinejoin="round" />
-            <rect x="15" y="18" width="50" height="9" rx="3" fill="#1474c4" />
-            <path d="M24 40h32" stroke="#b2d6f5" strokeWidth="6" />
+            <path d="M18 26h44l-5 42a4 4 0 0 1-4 3.5H27a4 4 0 0 1-4-3.5Z" fill="#fff" stroke="#0a7bbf" strokeWidth="2.5" strokeLinejoin="round" />
+            <rect x="15" y="18" width="50" height="9" rx="3" fill="#0a7bbf" />
+            <path d="M24 40h32" stroke="#9fdcf5" strokeWidth="6" />
           </g>
         )}
         {category === "butter" && (

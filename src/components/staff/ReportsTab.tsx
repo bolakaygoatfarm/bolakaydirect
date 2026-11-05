@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
 import type { Fridge } from "@/lib/types";
 import { Section, fmtSum } from "./ui";
+import { s } from "./i18n";
 
 interface O { fridge_id: string; status: string; total: number; payment_status: string; customer_id: string; issued_at: string | null; created_at: string }
 interface M { kind: string; qty: number; batches: { fridge_id: string; products: { price: number } | null } | null }
@@ -66,31 +67,31 @@ export function ReportsTab({ fridges }: { fridges: Fridge[] }) {
 
   return (
     <Section
-      title="Отчёты"
+      title={s("Отчёты")}
       action={
         <div className="flex gap-1">
           {PERIODS.map((p) => (
-            <button key={p.id} onClick={() => setDays(p.id)} className={`chip px-3 py-2 ${days === p.id ? "bg-brand-900 text-white" : "bg-white ring-1 ring-line"}`}>{p.label}</button>
+            <button key={p.id} onClick={() => setDays(p.id)} className={`chip px-3 py-2 ${days === p.id ? "bg-night text-white" : "bg-white ring-1 ring-line"}`}>{s(p.label)}</button>
           ))}
         </div>
       }
     >
-      {!orders ? <p className="text-muted">Загрузка…</p> : (
+      {!orders ? <p className="text-muted">{s("Загрузка…")}</p> : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Kpi label="Выручка (выдано)" value={fmtSum(sum("revenue"))} />
-            <Kpi label="Выдано заказов" value={String(totalIssued)} />
-            <Kpi label="Средний чек" value={fmtSum(totalIssued ? Math.round(sum("revenue") / totalIssued) : 0)} />
-            <Kpi label="Списано на сумму" value={fmtSum(sum("woSum"))} tone="danger" />
+            <Kpi label={s("Выручка (выдано)")} value={fmtSum(sum("revenue"))} />
+            <Kpi label={s("Выдано заказов")} value={String(totalIssued)} />
+            <Kpi label={s("Средний чек")} value={fmtSum(totalIssued ? Math.round(sum("revenue") / totalIssued) : 0)} />
+            <Kpi label={s("Списано на сумму")} value={fmtSum(sum("woSum"))} tone="danger" />
           </div>
           <div className="card mt-4 overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-brand-50 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
-                  <th className="p-3">Точка</th><th className="p-3 text-right">Выручка</th><th className="p-3 text-right">Заказы</th>
-                  <th className="p-3 text-right">Ср. чек</th><th className="p-3 text-right">Повторные покупатели</th>
-                  <th className="p-3 text-right">Отмены / истекли</th><th className="p-3 text-right">Возвраты</th>
-                  <th className="p-3 text-right">Списано, шт.</th><th className="p-3 text-right">Изъято, шт.</th>
+                  <th className="p-3">{s("Точка")}</th><th className="p-3 text-right">{s("Выручка")}</th><th className="p-3 text-right">{s("Заказы")}</th>
+                  <th className="p-3 text-right">{s("Ср. чек")}</th><th className="p-3 text-right">{s("Повторные покупатели")}</th>
+                  <th className="p-3 text-right">{s("Отмены / истекли")}</th><th className="p-3 text-right">{s("Возвраты")}</th>
+                  <th className="p-3 text-right">{s("Списано, шт.")}</th><th className="p-3 text-right">{s("Изъято, шт.")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">

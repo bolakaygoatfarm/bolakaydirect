@@ -3,6 +3,7 @@ import type { Lang } from "./types";
 export const TZ = "Asia/Tashkent";
 
 export function money(v: number, lang: Lang) {
+  if (lang === "en") return `${new Intl.NumberFormat("en-US").format(v)} UZS`;
   const n = new Intl.NumberFormat("ru-RU").format(v).replace(/ /g, " ");
   return `${n} ${lang === "uz" ? "so‘m" : "сум"}`;
 }
@@ -24,7 +25,7 @@ export function shortDate(iso: string, lang: Lang) {
     const [, m, day] = tashkentDate(d).split("-").map(Number);
     return `${day}-${UZ_MONTHS[m - 1]}`;
   }
-  return new Intl.DateTimeFormat("ru-RU", { timeZone: TZ, day: "numeric", month: "long" }).format(d);
+  return new Intl.DateTimeFormat(lang === "en" ? "en-GB" : "ru-RU", { timeZone: TZ, day: "numeric", month: "long" }).format(d);
 }
 
 export function dateTime(iso: string, lang: Lang) {
@@ -79,8 +80,9 @@ export function pickupSlots(open: string, close: string, ymd: string): string[] 
   return res;
 }
 
-/** Берёт локализованное поле: pick(product, "name", "uz") → product.name_uz (с фолбэком на ru) */
+/** Берёт локализованное поле: pick(product, "name", "uz") → product.name_uz (пустое → фолбэк на ru, затем uz) */
 export function pick(obj: object, field: string, lang: Lang): string {
   const o = obj as Record<string, unknown>;
-  return ((o[`${field}_${lang}`] as string | null) ?? (o[`${field}_ru`] as string | null) ?? "") as string;
+  const get = (l: string) => (o[`${field}_${l}`] as string | null | undefined) || null;
+  return get(lang) ?? get("ru") ?? get("uz") ?? "";
 }

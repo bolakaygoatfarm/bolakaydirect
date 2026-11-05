@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
 import type { Fridge } from "@/lib/types";
 import { ErrorNote, Field, Section, fmtDT } from "./ui";
+import { s } from "./i18n";
 
 interface Log { id: number; temp_c: number; note: string | null; recorded_at: string }
 
@@ -31,7 +32,7 @@ export function TempTab({ fridge }: { fridge: Fridge }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const v = Number(temp.replace(",", "."));
-    if (!Number.isFinite(v)) return setErr("Введите число");
+    if (!Number.isFinite(v)) return setErr(s("Введите число"));
     setBusy(true);
     setErr(null);
     const { data: u } = await sb.auth.getUser();
@@ -47,12 +48,12 @@ export function TempTab({ fridge }: { fridge: Fridge }) {
   const outOfRange = temp !== "" && Number.isFinite(t) && (t < OK_MIN || t > OK_MAX);
 
   return (
-    <Section title={`Журнал температуры · ${fridge.name}`}>
+    <Section title={s("Журнал температуры · {0}", fridge.name)}>
       <form onSubmit={submit} className="card grid gap-3 p-4 sm:grid-cols-[10rem_1fr_auto] sm:items-end">
-        <Field label="Температура, °C"><input className="field" inputMode="decimal" value={temp} onChange={(e) => setTemp(e.target.value)} placeholder="4.0" required /></Field>
-        <Field label="Комментарий"><input className="field" value={note} onChange={(e) => setNote(e.target.value)} placeholder={outOfRange ? "Что сделано?" : ""} /></Field>
-        <button className="btn btn-primary" disabled={busy}>Записать</button>
-        {outOfRange && <p className="text-sm font-bold text-danger sm:col-span-3">Вне нормы {OK_MIN}…{OK_MAX} °C — проверьте холодильник и опишите принятые меры.</p>}
+        <Field label={s("Температура, °C")}><input className="field" inputMode="decimal" value={temp} onChange={(e) => setTemp(e.target.value)} placeholder="4.0" required /></Field>
+        <Field label={s("Комментарий")}><input className="field" value={note} onChange={(e) => setNote(e.target.value)} placeholder={outOfRange ? s("Что сделано?") : ""} /></Field>
+        <button className="btn btn-primary" disabled={busy}>{s("Записать")}</button>
+        {outOfRange && <p className="text-sm font-bold text-danger sm:col-span-3">{s("Вне нормы {0}…{1} °C — проверьте холодильник и опишите принятые меры.", OK_MIN, OK_MAX)}</p>}
         <div className="sm:col-span-3"><ErrorNote text={err} /></div>
       </form>
       <ul className="mt-3 grid gap-2">
@@ -65,7 +66,7 @@ export function TempTab({ fridge }: { fridge: Fridge }) {
             </li>
           );
         })}
-        {logs && !logs.length && <li className="card p-4 text-muted">Записей пока нет.</li>}
+        {logs && !logs.length && <li className="card p-4 text-muted">{s("Записей пока нет.")}</li>}
       </ul>
     </Section>
   );

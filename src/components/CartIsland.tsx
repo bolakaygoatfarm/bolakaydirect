@@ -37,11 +37,11 @@ export function CartIsland({
 
   return (
     <>
-      {open && <button aria-label={d.close} tabIndex={-1} className="animate-fade fixed inset-0 z-30 bg-brand-900/35" onClick={() => setOpen(false)} />}
+      {open && <button aria-label={d.close} tabIndex={-1} className="animate-fade fixed inset-0 z-30 bg-night/50" onClick={() => setOpen(false)} />}
       <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4 pt-3">
         <div
           data-open={open}
-          className="island animate-island pointer-events-auto mx-auto max-w-md bg-brand-900 text-white shadow-[var(--shadow-float)]"
+          className="island animate-island pointer-events-auto mx-auto max-w-md bg-night text-white ring-1 ring-white/10 shadow-[var(--shadow-float)]"
         >
           <div className="island-body" id="cart-island-list">
             <div className="min-h-0 overflow-hidden">

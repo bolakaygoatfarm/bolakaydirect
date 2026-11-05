@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { s, staffLang } from "./i18n";
 
 export const STAFF_ERRORS: Record<string, string> = {
   FORBIDDEN: "Недостаточно прав",
@@ -21,7 +22,7 @@ export const STAFF_ERRORS: Record<string, string> = {
 
 export function staffError(msg?: string) {
   const code = (msg || "").trim();
-  return STAFF_ERRORS[code] ?? (code || "Ошибка");
+  return STAFF_ERRORS[code] ? s(STAFF_ERRORS[code]) : code || s("Ошибка");
 }
 
 export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
@@ -32,11 +33,11 @@ export function Modal({ title, onClose, children }: { title: string; onClose: ()
   }, [onClose]);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="dialog" aria-modal="true" aria-label={title}>
-      <button aria-label="Закрыть" className="animate-fade absolute inset-0 bg-brand-900/45" onClick={onClose} />
+      <button aria-label={s("Закрыть")} className="animate-fade absolute inset-0 bg-night/55" onClick={onClose} />
       <div className="animate-sheet relative max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-[1.5rem] bg-white p-5 sm:rounded-[1.5rem]">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="font-display text-lg font-bold">{title}</h2>
-          <button onClick={onClose} aria-label="Закрыть" className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-lg font-bold">×</button>
+          <button onClick={onClose} aria-label={s("Закрыть")} className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-lg font-bold">×</button>
         </div>
         {children}
       </div>
@@ -70,7 +71,11 @@ export function Section({ title, action, children }: { title: string; action?: R
   );
 }
 
-export const fmtSum = (v: number) => new Intl.NumberFormat("ru-RU").format(v).replace(/ /g, " ") + " сум";
+export const fmtSum = (v: number) => {
+  const l = staffLang();
+  if (l === "en") return `${new Intl.NumberFormat("en-US").format(v)} UZS`;
+  return new Intl.NumberFormat("ru-RU").format(v).replace(/\s/g, " ") + (l === "uz" ? " so‘m" : " сум");
+};
 export const fmtDT = (iso: string) =>
   new Intl.DateTimeFormat("ru-RU", { timeZone: "Asia/Tashkent", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 

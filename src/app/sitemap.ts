@@ -8,7 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return paths.flatMap((p) =>
     (["uz", "ru"] as const).map((lang) => ({
       url: `${SITE_URL}/${lang}${p}`,
-      alternates: { languages: { uz: `${SITE_URL}/uz${p}`, ru: `${SITE_URL}/ru${p}` } },
+      alternates: { languages: { uz: `${SITE_URL}/uz${p}`, ru: `${SITE_URL}/ru${p}`, en: `${SITE_URL}/en${p}` } },
     })),
   );
 }

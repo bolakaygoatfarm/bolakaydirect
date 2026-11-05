@@ -1,19 +1,27 @@
 import type { Metadata, Viewport } from "next";
 import "../globals.css";
 import { manrope, unbounded } from "../fonts";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
-  title: "BOLAKAY · Сотрудники",
+  title: "BOLAKAY · Staff",
   robots: { index: false, follow: false },
   icons: { icon: [{ url: "/favicon-32.png", sizes: "32x32" }, { url: "/icon-192.png", sizes: "192x192" }], apple: "/apple-touch-icon.png" },
 };
 
-export const viewport: Viewport = { themeColor: "#0c2f52", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = {
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#0a2747" }, { media: "(prefers-color-scheme: dark)", color: "#06111f" }],
+  width: "device-width",
+  initialScale: 1,
+};
 
 export default function StaffLayout({ children }: LayoutProps<"/staff">) {
   return (
-    <html lang="ru" className={`${manrope.variable} ${unbounded.variable}`}>
-      <body className="min-h-dvh bg-[#f5f8fb]">{children}</body>
+    <html lang="ru" suppressHydrationWarning className={`${manrope.variable} ${unbounded.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-dvh bg-canvas">{children}</body>
     </html>
   );
 }

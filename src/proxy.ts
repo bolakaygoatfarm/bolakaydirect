@@ -2,16 +2,19 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /**
  * Языковые редиректы:
- *  /                 → /uz или /ru (по cookie или Accept-Language)
+ *  /                 → /uz, /ru или /en (по cookie или Accept-Language)
  *  /point/<code>     → /<lang>/point/<code>  (адрес, который печатается в QR-коде)
  */
-function detectLang(req: NextRequest): "uz" | "ru" {
+type L = "uz" | "ru" | "en";
+function detectLang(req: NextRequest): L {
   const saved = req.cookies.get("lang")?.value;
-  if (saved === "uz" || saved === "ru") return saved;
-  const al = (req.headers.get("accept-language") || "").toLowerCase();
-  const ruIdx = al.indexOf("ru");
-  const uzIdx = al.indexOf("uz");
-  if (ruIdx !== -1 && (uzIdx === -1 || ruIdx < uzIdx)) return "ru";
+  if (saved === "uz" || saved === "ru" || saved === "en") return saved;
+  // Первый язык из Accept-Language, который мы поддерживаем; по умолчанию — узбекский
+  const al = (req.headers.get("accept-language") || "").toLowerCase().split(",");
+  for (const part of al) {
+    const code = part.trim().slice(0, 2);
+    if (code === "uz" || code === "ru" || code === "en") return code;
+  }
   return "uz";
 }
 

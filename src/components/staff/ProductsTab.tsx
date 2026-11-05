@@ -5,12 +5,13 @@ import { browserClient } from "@/lib/supabase";
 import type { Category, Product } from "@/lib/types";
 import { ProductArt } from "../ProductArt";
 import { ErrorNote, Field, Modal, Section, fmtSum } from "./ui";
+import { s } from "./i18n";
 
 const CAT_RU: Record<Category, string> = { milk: "Молоко", yogurt: "Йогурт", butter: "Масло", drinks: "Напитки" };
 
 const EMPTY: Omit<Product, "id"> = {
-  slug: "", category: "milk", name_uz: "", name_ru: "", description_uz: "", description_ru: "",
-  composition_uz: "", composition_ru: "", storage_uz: "", storage_ru: "", size_label: "",
+  slug: "", category: "milk", name_uz: "", name_ru: "", name_en: "", description_uz: "", description_ru: "", description_en: "",
+  composition_uz: "", composition_ru: "", composition_en: "", storage_uz: "", storage_ru: "", storage_en: "", size_label: "",
   net_amount: null, net_unit: "ml", price: 0, sell_days: 2, image_url: null, is_active: true, sort: 100,
 };
 
@@ -29,18 +30,18 @@ export function ProductsTab() {
   }, [load]);
 
   return (
-    <Section title="Каталог товаров" action={<button className="btn btn-primary min-h-10 text-sm" onClick={() => setEdit({ ...EMPTY })}>+ Товар</button>}>
+    <Section title={s("Каталог товаров")} action={<button className="btn btn-primary min-h-10 text-sm" onClick={() => setEdit({ ...EMPTY })}>{s("+ Товар")}</button>}>
       <ul className="grid gap-3 sm:grid-cols-2">
         {(items ?? []).map((p) => (
           <li key={p.id} className={`card flex gap-3 p-3 ${p.is_active ? "" : "opacity-60"}`}>
             <ProductArt category={p.category} image={p.image_url} alt="" className="h-20 w-20 shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1">
               <p className="font-extrabold">{p.name_ru} · {p.size_label}</p>
-              <p className="text-sm text-muted">{CAT_RU[p.category]} · продаётся {p.sell_days} дн.</p>
+              <p className="text-sm text-muted">{s(CAT_RU[p.category])} · {s("продаётся {0} дн.", p.sell_days)}</p>
               <p className="mt-1 font-bold text-brand-700">{fmtSum(p.price)}</p>
-              {!p.is_active && <span className="chip mt-1 bg-danger-50 text-danger">скрыт</span>}
+              {!p.is_active && <span className="chip mt-1 bg-danger-50 text-danger">{s("скрыт")}</span>}
             </div>
-            <button className="btn btn-ghost min-h-9 self-start px-3 text-xs" onClick={() => setEdit(p)}>Изменить</button>
+            <button className="btn btn-ghost min-h-9 self-start px-3 text-xs" onClick={() => setEdit(p)}>{s("Изменить")}</button>
           </li>
         ))}
       </ul>
@@ -62,7 +63,7 @@ function ProductForm({ initial, onClose, onSaved }: { initial: Partial<Product>;
   });
 
   async function upload(file: File) {
-    if (file.size > 5 * 1024 * 1024) return setErr("Файл больше 5 МБ");
+    if (file.size > 5 * 1024 * 1024) return setErr(s("Файл больше 5 МБ"));
     setBusy(true);
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${p.slug || "product"}-${Date.now()}.${ext}`;
@@ -87,56 +88,60 @@ function ProductForm({ initial, onClose, onSaved }: { initial: Partial<Product>;
     };
     const res = id ? await sb.from("products").update(payload).eq("id", id) : await sb.from("products").insert(payload);
     setBusy(false);
-    if (res.error) setErr(res.error.code === "23505" ? "Такой slug уже есть" : res.error.message);
+    if (res.error) setErr(res.error.code === "23505" ? s("Такой slug уже есть") : res.error.message);
     else onSaved();
   }
 
   return (
-    <Modal title={p.id ? "Изменить товар" : "Новый товар"} onClose={onClose}>
+    <Modal title={p.id ? s("Изменить товар") : s("Новый товар")} onClose={onClose}>
       <form onSubmit={save} className="grid gap-3">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Название (RU)"><input {...txt("name_ru")} required /></Field>
-          <Field label="Nomi (UZ)"><input {...txt("name_uz")} required /></Field>
-          <Field label="Slug (латиница, для адреса)"><input {...txt("slug")} pattern="[a-z0-9-]+" required /></Field>
-          <Field label="Категория">
+          <Field label={s("Название (UZ)")}><input {...txt("name_uz")} required /></Field>
+          <Field label={s("Название (RU)")}><input {...txt("name_ru")} required /></Field>
+          <Field label={s("Название (EN)")}><input {...txt("name_en")} /></Field>
+          <Field label={s("Slug (латиница, для адреса)")}><input {...txt("slug")} pattern="[a-z0-9-]+" required /></Field>
+          <Field label={s("Категория")}>
             <select className="field" value={p.category} onChange={(e) => set("category", e.target.value as Category)}>
-              {Object.entries(CAT_RU).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {Object.entries(CAT_RU).map(([k, v]) => <option key={k} value={k}>{s(v)}</option>)}
             </select>
           </Field>
-          <Field label="Фасовка (напр. 1 l, 200 g)"><input {...txt("size_label")} required /></Field>
-          <Field label="Цена, сум"><input className="field" type="number" min={0} step={500} value={p.price ?? 0} onChange={(e) => set("price", Number(e.target.value))} required /></Field>
-          <Field label="Объём/масса"><input className="field" type="number" min={1} value={p.net_amount ?? ""} onChange={(e) => set("net_amount", e.target.value ? Number(e.target.value) : null)} /></Field>
-          <Field label="Ед.">
+          <Field label={s("Фасовка (напр. 1 l, 200 g)")}><input {...txt("size_label")} required /></Field>
+          <Field label={s("Цена, сум")}><input className="field" type="number" min={0} step={500} value={p.price ?? 0} onChange={(e) => set("price", Number(e.target.value))} required /></Field>
+          <Field label={s("Объём/масса")}><input className="field" type="number" min={1} value={p.net_amount ?? ""} onChange={(e) => set("net_amount", e.target.value ? Number(e.target.value) : null)} /></Field>
+          <Field label={s("Ед.")}>
             <select className="field" value={p.net_unit ?? "ml"} onChange={(e) => set("net_unit", e.target.value as "ml" | "g")}>
-              <option value="ml">мл</option><option value="g">г</option>
+              <option value="ml">{s("мл")}</option><option value="g">{s("г")}</option>
             </select>
           </Field>
-          <Field label="Дней в продаже"><input className="field" type="number" min={1} max={90} value={p.sell_days ?? 2} onChange={(e) => set("sell_days", Number(e.target.value))} required /></Field>
-          <Field label="Порядок"><input className="field" type="number" value={p.sort ?? 0} onChange={(e) => set("sort", Number(e.target.value))} /></Field>
+          <Field label={s("Дней в продаже")}><input className="field" type="number" min={1} max={90} value={p.sell_days ?? 2} onChange={(e) => set("sell_days", Number(e.target.value))} required /></Field>
+          <Field label={s("Порядок")}><input className="field" type="number" value={p.sort ?? 0} onChange={(e) => set("sort", Number(e.target.value))} /></Field>
         </div>
-        <p className="rounded-xl bg-brand-50 p-3 text-xs">«Дней в продаже» = 2 → товар продаётся в день производства и на следующий день, на третий день автоматически скрывается.</p>
-        <Field label="Описание (RU)"><textarea {...txt("description_ru")} /></Field>
-        <Field label="Tavsif (UZ)"><textarea {...txt("description_uz")} /></Field>
-        <Field label="Состав (RU)"><input {...txt("composition_ru")} /></Field>
-        <Field label="Tarkibi (UZ)"><input {...txt("composition_uz")} /></Field>
-        <Field label="Хранение (RU)"><input {...txt("storage_ru")} /></Field>
-        <Field label="Saqlash (UZ)"><input {...txt("storage_uz")} /></Field>
-        <Field label="Фото (JPG/PNG/WebP до 5 МБ)">
+        <p className="rounded-xl bg-brand-50 p-3 text-xs">{s("«Дней в продаже» = 2 → товар продаётся в день производства и на следующий день, на третий день автоматически скрывается.")}</p>
+        <Field label={s("Описание (UZ)")}><textarea {...txt("description_uz")} /></Field>
+        <Field label={s("Описание (RU)")}><textarea {...txt("description_ru")} /></Field>
+        <Field label={s("Описание (EN)")}><textarea {...txt("description_en")} /></Field>
+        <Field label={s("Состав (UZ)")}><input {...txt("composition_uz")} /></Field>
+        <Field label={s("Состав (RU)")}><input {...txt("composition_ru")} /></Field>
+        <Field label={s("Состав (EN)")}><input {...txt("composition_en")} /></Field>
+        <Field label={s("Хранение (UZ)")}><input {...txt("storage_uz")} /></Field>
+        <Field label={s("Хранение (RU)")}><input {...txt("storage_ru")} /></Field>
+        <Field label={s("Хранение (EN)")}><input {...txt("storage_en")} /></Field>
+        <Field label={s("Фото (JPG/PNG/WebP до 5 МБ)")}>
           <input className="field" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
         </Field>
         {p.image_url && (
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={p.image_url} alt="" className="h-16 w-16 rounded-xl object-cover" />
-            <button type="button" className="btn btn-ghost min-h-9 px-3 text-xs" onClick={() => set("image_url", null)}>Убрать фото</button>
+            <button type="button" className="btn btn-ghost min-h-9 px-3 text-xs" onClick={() => set("image_url", null)}>{s("Убрать фото")}</button>
           </div>
         )}
         <label className="flex items-center gap-3 font-bold">
           <input type="checkbox" className="h-5 w-5 accent-brand-600" checked={!!p.is_active} onChange={(e) => set("is_active", e.target.checked)} />
-          Показывать покупателям
+          {s("Показывать покупателям")}
         </label>
         <ErrorNote text={err} />
-        <button className="btn btn-primary" disabled={busy}>{busy ? "Сохраняем…" : "Сохранить"}</button>
+        <button className="btn btn-primary" disabled={busy}>{busy ? s("Сохраняем…") : s("Сохранить")}</button>
       </form>
     </Modal>
   );

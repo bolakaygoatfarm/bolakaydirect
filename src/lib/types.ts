@@ -1,6 +1,8 @@
-export type Lang = "uz" | "ru";
-export const LANGS: Lang[] = ["uz", "ru"];
-export const isLang = (v: string): v is Lang => v === "uz" || v === "ru";
+export type Lang = "uz" | "ru" | "en";
+export const LANGS: Lang[] = ["uz", "ru", "en"];
+export const isLang = (v: string): v is Lang => v === "uz" || v === "ru" || v === "en";
+/** Язык для данных, у которых нет английской версии (Telegram-бот, старые записи) */
+export const dataLang = (l: Lang): "uz" | "ru" => (l === "uz" ? "uz" : "ru");
 
 export type Category = "milk" | "yogurt" | "butter" | "drinks";
 
@@ -10,12 +12,16 @@ export interface Product {
   category: Category;
   name_uz: string;
   name_ru: string;
+  name_en?: string | null;
   description_uz: string | null;
   description_ru: string | null;
+  description_en?: string | null;
   composition_uz: string | null;
   composition_ru: string | null;
+  composition_en?: string | null;
   storage_uz: string | null;
   storage_ru: string | null;
+  storage_en?: string | null;
   size_label: string;
   net_amount: number | null;
   net_unit: "ml" | "g" | null;
@@ -34,6 +40,8 @@ export interface Fridge {
   address_ru: string | null;
   landmark_uz: string | null;
   landmark_ru: string | null;
+  address_en?: string | null;
+  landmark_en?: string | null;
   lat: number | null;
   lng: number | null;
   open_time: string;
@@ -48,12 +56,16 @@ export interface CatalogRow {
   category: Category;
   name_uz: string;
   name_ru: string;
+  name_en?: string | null;
   description_uz: string | null;
   description_ru: string | null;
+  description_en?: string | null;
   composition_uz: string | null;
   composition_ru: string | null;
+  composition_en?: string | null;
   storage_uz: string | null;
   storage_ru: string | null;
+  storage_en?: string | null;
   size_label: string;
   net_amount: number | null;
   net_unit: "ml" | "g" | null;
@@ -104,8 +116,8 @@ export interface PublicOrder {
   issued_at: string | null;
   customer_name: string | null;
   telegram_linked: boolean;
-  fridge: { code: string; name: string; address_uz: string | null; address_ru: string | null; lat: number | null; lng: number | null };
-  items: { product_id: string; name_uz: string; name_ru: string; size_label: string; qty: number; price: number; produced_at: string; expires_at: string }[];
+  fridge: { code: string; name: string; address_uz: string | null; address_ru: string | null; address_en?: string | null; lat: number | null; lng: number | null };
+  items: { product_id: string; name_uz: string; name_ru: string; name_en?: string | null; size_label: string; qty: number; price: number; produced_at: string; expires_at: string }[];
 }
 
 export function groupCatalog(rows: CatalogRow[]): CatalogProduct[] {

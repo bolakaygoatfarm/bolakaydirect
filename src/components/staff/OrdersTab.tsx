@@ -5,6 +5,7 @@ import { browserClient } from "@/lib/supabase";
 import type { Fridge, OrderStatus } from "@/lib/types";
 import type { Me } from "./StaffApp";
 import { ErrorNote, Field, Modal, Section, fmtDT, fmtSum, staffError } from "./ui";
+import { s } from "./i18n";
 
 interface StaffOrder {
   id: string;
@@ -60,11 +61,11 @@ export function OrdersTab({ fridge, me }: { fridge: Fridge; me: Me }) {
 
   return (
     <Section
-      title={history ? "История заказов" : "Заказы к выдаче"}
-      action={<button className="btn btn-ghost min-h-9 px-3 text-xs" onClick={() => setHistory(!history)}>{history ? "← Активные" : "История"}</button>}
+      title={history ? s("История заказов") : s("Заказы к выдаче")}
+      action={<button className="btn btn-ghost min-h-9 px-3 text-xs" onClick={() => setHistory(!history)}>{history ? s("← Активные") : s("История")}</button>}
     >
-      <input className="field mb-3" inputMode="numeric" placeholder="Поиск: № заказа, код или телефон" value={q} onChange={(e) => setQ(e.target.value)} />
-      {!orders ? <p className="text-muted">Загрузка…</p> : !shown.length ? <p className="card p-5 text-muted">Заказов нет.</p> : (
+      <input className="field mb-3" inputMode="numeric" placeholder={s("Поиск: № заказа, код или телефон")} value={q} onChange={(e) => setQ(e.target.value)} />
+      {!orders ? <p className="text-muted">{s("Загрузка…")}</p> : !shown.length ? <p className="card p-5 text-muted">{s("Заказов нет.")}</p> : (
         <ul className="grid gap-3 md:grid-cols-2">
           {shown.map((o) => (
             <li key={o.id} className="card p-4">
@@ -74,8 +75,8 @@ export function OrdersTab({ fridge, me }: { fridge: Fridge; me: Me }) {
                   <p className="text-sm text-muted">{o.pickup_date.split("-").reverse().slice(0, 2).join(".")} · {o.pickup_slot.replace("-", "–")}</p>
                 </div>
                 <div className="text-right">
-                  <span className={`chip ${o.status === "confirmed" ? "bg-fresh-50 text-fresh" : o.status === "issued" ? "bg-brand-50 text-brand-700" : "bg-aged-50 text-aged"}`}>{STATUS_RU[o.status]}</span>
-                  <p className="mt-1 text-xs font-bold text-muted">{o.payment_status === "paid" ? "Оплачен" : o.payment_status === "refunded" ? "Возврат" : "Не оплачен"}</p>
+                  <span className={`chip ${o.status === "confirmed" ? "bg-fresh-50 text-fresh" : o.status === "issued" ? "bg-brand-50 text-brand-700" : "bg-aged-50 text-aged"}`}>{s(STATUS_RU[o.status])}</span>
+                  <p className="mt-1 text-xs font-bold text-muted">{o.payment_status === "paid" ? s("Оплачен") : o.payment_status === "refunded" ? s("Возврат") : s("Не оплачен")}</p>
                 </div>
               </div>
               <ul className="mt-3 grid gap-1 text-sm">
@@ -94,12 +95,12 @@ export function OrdersTab({ fridge, me }: { fridge: Fridge; me: Me }) {
               {o.comment && <p className="mt-1 rounded-lg bg-milk p-2 text-sm">💬 {o.comment}</p>}
               {o.status === "confirmed" && (
                 <div className="mt-3 flex gap-2">
-                  <button className="btn btn-primary flex-1" onClick={() => setIssuing(o)}>Выдать</button>
-                  {me.role !== "courier" && <button className="btn btn-danger" onClick={() => setCancelling(o)}>Отменить</button>}
+                  <button className="btn btn-primary flex-1" onClick={() => setIssuing(o)}>{s("Выдать")}</button>
+                  {me.role !== "courier" && <button className="btn btn-danger" onClick={() => setCancelling(o)}>{s("Отменить")}</button>}
                 </div>
               )}
               {o.status === "pending_payment" && me.role !== "courier" && (
-                <button className="btn btn-danger mt-3 w-full" onClick={() => setCancelling(o)}>Отменить</button>
+                <button className="btn btn-danger mt-3 w-full" onClick={() => setCancelling(o)}>{s("Отменить")}</button>
               )}
             </li>
           ))}
@@ -120,7 +121,7 @@ function IssueModal({ order, onClose, onDone }: { order: StaffOrder; onClose: ()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (code.trim() !== order.pickup_code) return setErr("Код не совпадает. Попросите покупателя показать экран заказа.");
+    if (code.trim() !== order.pickup_code) return setErr(s("Код не совпадает. Попросите покупателя показать экран заказа."));
     setBusy(true);
     setErr(null);
     const { error } = await browserClient().rpc("issue_order", { p_order_id: order.id, p_payment_provider: needsPayment ? pay : null });
@@ -130,22 +131,22 @@ function IssueModal({ order, onClose, onDone }: { order: StaffOrder; onClose: ()
   }
 
   return (
-    <Modal title={`Выдача заказа № ${order.number}`} onClose={onClose}>
+    <Modal title={s("Выдача заказа № {0}", order.number)} onClose={onClose}>
       <form onSubmit={submit} className="grid gap-4">
-        <Field label="Код получения от покупателя">
+        <Field label={s("Код получения от покупателя")}>
           <input className="field font-display text-center text-3xl tracking-[0.3em]" inputMode="numeric" maxLength={4} autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} required />
         </Field>
         {needsPayment && (
           <fieldset>
-            <legend className="label">Получена оплата {fmtSum(order.total)}</legend>
+            <legend className="label">{s("Получена оплата {0}", fmtSum(order.total))}</legend>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" className="option" aria-pressed={pay === "cash"} onClick={() => setPay("cash")}>Наличные</button>
-              <button type="button" className="option" aria-pressed={pay === "card_terminal"} onClick={() => setPay("card_terminal")}>Карта (терминал)</button>
+              <button type="button" className="option" aria-pressed={pay === "cash"} onClick={() => setPay("cash")}>{s("Наличные")}</button>
+              <button type="button" className="option" aria-pressed={pay === "card_terminal"} onClick={() => setPay("card_terminal")}>{s("Карта (терминал)")}</button>
             </div>
           </fieldset>
         )}
         <ErrorNote text={err} />
-        <button className="btn btn-primary" disabled={busy || code.length !== 4}>{busy ? "Сохраняем…" : needsPayment ? "Оплата получена, товар выдан" : "Товар выдан"}</button>
+        <button className="btn btn-primary" disabled={busy || code.length !== 4}>{busy ? s("Сохраняем…") : needsPayment ? s("Оплата получена, товар выдан") : s("Товар выдан")}</button>
       </form>
     </Modal>
   );
@@ -164,12 +165,12 @@ function CancelModal({ order, onClose, onDone }: { order: StaffOrder; onClose: (
     else onDone();
   }
   return (
-    <Modal title={`Отмена заказа № ${order.number}`} onClose={onClose}>
+    <Modal title={s("Отмена заказа № {0}", order.number)} onClose={onClose}>
       <form onSubmit={submit} className="grid gap-4">
-        <p className="text-sm text-muted">Резерв будет снят, товар вернётся в продажу.{order.payment_status === "paid" && " Заказ оплачен — будет зафиксирован возврат, верните деньги покупателю."}</p>
-        <Field label="Причина"><input className="field" value={reason} onChange={(e) => setReason(e.target.value)} minLength={3} required /></Field>
+        <p className="text-sm text-muted">{s("Резерв будет снят, товар вернётся в продажу.")}{order.payment_status === "paid" && s(" Заказ оплачен — будет зафиксирован возврат, верните деньги покупателю.")}</p>
+        <Field label={s("Причина")}><input className="field" value={reason} onChange={(e) => setReason(e.target.value)} minLength={3} required /></Field>
         <ErrorNote text={err} />
-        <button className="btn btn-danger" disabled={busy}>Отменить заказ</button>
+        <button className="btn btn-danger" disabled={busy}>{s("Отменить заказ")}</button>
       </form>
     </Modal>
   );

@@ -1,19 +1,33 @@
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* Дизайн-система BOLAKAY: фирменный голубой, белый фон, тёплый молочный акцент */
+/* Дизайн-система BOLAKAY, от логотипа:
+   небесно-голубой #04A9E4 (знак) · глубокий синий (кнопки, текст-акцент) · ночной тёмно-синий (тёмные секции)
+   · тёплый молочно-кремовый (чередование секций) · сливочно-жёлтый акцент (масло, бейджи). */
 @theme {
-  --color-brand-50: #eef6fd;
-  --color-brand-100: #d8eafa;
-  --color-brand-200: #b2d6f5;
-  --color-brand-400: #4aa6ea;
-  --color-brand-500: #2390e0;
-  --color-brand-600: #1474c4;
-  --color-brand-700: #115d9e;
-  --color-brand-900: #0c2f52;
-  --color-ink: #0e2a47;
-  --color-muted: #5b6b7d;
-  --color-line: #dce7f2;
-  --color-milk: #fbf8f2;
+  --color-brand-50: #e9f7fd;
+  --color-brand-100: #cdeefb;
+  --color-brand-200: #9fdcf5;
+  --color-brand-400: #3cc0ee;
+  --color-brand-500: #04a9e4;
+  --color-brand-600: #0a7bbf;
+  --color-brand-700: #075f97;
+  --color-brand-800: #0b3f6b;
+  --color-brand-900: #0a2747;
+  --color-ink: #0b2440;
+  --color-muted: #52657a;
+  --color-line: #d5e6f1;
+  --color-milk: #fff4e3;
+  --color-cream: #fffaf2;
+  --color-butter: #f6b93b;
+  --color-butter-50: #fff6e3;
+  --color-butter-100: #ffe8b5;
+  --color-butter-400: #ffc95c;
+  --color-butter-700: #8a5a00;
+  --color-night: #0a2747;   /* тёмные секции, корзина-остров, затемнение под окнами */
+  --color-page: #ffffff;    /* фон страницы */
+  --color-canvas: #f5f8fb;  /* фон панели сотрудников */
+  --color-surface: #ffffff; /* карточки */
   --color-fresh: #2f8a53;
   --color-fresh-50: #e8f5ec;
   --color-aged: #b86e0c;
@@ -35,7 +49,7 @@ html {
 }
 
 body {
-  background: #ffffff;
+  background: var(--color-page);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -72,7 +86,7 @@ body {
 .btn-danger { background: var(--color-danger-50); color: var(--color-danger); }
 
 .card {
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
@@ -83,7 +97,7 @@ body {
   min-height: 3rem;
   border-radius: 0.875rem;
   border: 1.5px solid var(--color-line);
-  background: #fff;
+  background: var(--color-surface);
   padding: 0.65rem 0.9rem;
   font-size: 1rem;
   color: var(--color-ink);
@@ -165,7 +179,7 @@ body {
 /* Шапка с прогрессивным размытием (слои — соседи, чтобы backdrop-filter не вкладывался) */
 .header-glass {
   position: absolute; inset: 0;
-  background: rgb(255 255 255 / 0.78);
+  background: rgb(255 255 255 / 0.62);
   -webkit-backdrop-filter: blur(16px) saturate(1.6);
   backdrop-filter: blur(16px) saturate(1.6);
   box-shadow: inset 0 -1px 0 rgb(220 231 242 / 0.6);
@@ -178,6 +192,178 @@ body {
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
 }
+
+/* ===== Фоновые эффекты ===== */
+
+
+/* Зерно (Cult UI Texture Overlay → paperGrain): SVG-шум, почти невидимый, убирает «пластиковость» */
+.grain::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.35; mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+/* Точечная сетка для тёмной секции (Texture Overlay → dots) + свечение */
+/* Свечения держим ВНУТРИ секции (не у краёв) — иначе на стыке с волной виден шов */
+.night { position: relative; background: radial-gradient(44rem 20rem at 90% 40%, rgb(4 169 228 / 0.28), transparent 70%), radial-gradient(30rem 16rem at 5% 55%, rgb(246 185 59 / 0.14), transparent 70%), var(--color-night); color: #fff; }
+.night::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.09) 1px, transparent 0); background-size: 22px 22px; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 60%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 60%, transparent); }
+
+/* ===== «Молочный» стиль (по референсу) =====
+   Правило бесшовности: у каждой светлой секции верхний и нижний край — чистый белый,
+   вся «голубизна» и свечения — в середине. Тогда секции стыкуются без разреза. */
+.milk-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  background: radial-gradient(70rem 32rem at 92% 10%, #bfe9fb 0%, transparent 65%), radial-gradient(40rem 24rem at 0% 35%, rgb(246 185 59 / 0.13) 0%, transparent 70%), linear-gradient(180deg, #e2f5fd 0%, #eef9fe 45%, #f8fdff 80%, #ffffff 100%); }
+.milk-bg--soft { background: radial-gradient(44rem 20rem at 100% 50%, #c9edfb 0%, transparent 70%), radial-gradient(30rem 16rem at 0% 60%, rgb(246 185 59 / 0.1) 0%, transparent 70%), linear-gradient(180deg, #ffffff 0%, #ecf9fe 30%, #ecf9fe 70%, #ffffff 100%); }
+.milk-glow { position: absolute; border-radius: 999px; filter: blur(70px); will-change: transform; }
+.milk-glow--a { width: 36rem; height: 36rem; right: -10rem; top: -12rem; background: #8fd8f5; opacity: 0.55; animation: drift-1 24s ease-in-out infinite alternate; }
+.milk-glow--b { width: 26rem; height: 26rem; left: -10rem; top: 30%; background: #ffe6b0; opacity: 0.45; animation: drift-2 28s ease-in-out infinite alternate; }
+.milk-bg--soft .milk-glow { display: none; }
+.milk-waves { position: absolute; left: -5%; right: -5%; bottom: -2px; width: 110%; height: clamp(110px, 22vw, 260px); }
+/* под волнами — чистый белый до самого края секции */
+.milk-bg::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3rem; background: var(--color-page); }
+.milk-sway-1 { animation: sway 14s ease-in-out infinite alternate; transform-origin: center; }
+.milk-sway-2 { animation: sway 18s ease-in-out infinite alternate-reverse; transform-origin: center; }
+@keyframes sway { from { transform: translateX(-2%) skewX(-1deg); } to { transform: translateX(2%) skewX(1deg); } }
+.milk-splash { position: absolute; right: 0; top: 2rem; width: clamp(90px, 16vw, 220px); height: auto; filter: drop-shadow(0 12px 18px rgb(10 123 191 / 0.15)); animation: float 7s ease-in-out infinite alternate; }
+.milk-bg--soft .milk-splash { top: 4rem; }
+@keyframes float { to { transform: translateY(14px); } }
+@keyframes drift-1 { to { transform: translate(-6rem, 5rem) scale(1.12); } }
+@keyframes drift-2 { to { transform: translate(5rem, -3rem) scale(0.9); } }
+
+/* Стекло */
+.glass { background: rgb(255 255 255 / 0.72); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4); border: 1px solid rgb(255 255 255 / 0.9); box-shadow: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 18px 40px -22px rgb(10 91 150 / 0.35); }
+
+/* Подпись-«таблетка» */
+.eyebrow { display: inline-flex; align-items: center; gap: 0.45rem; border-radius: 999px; padding: 0.3rem 0.75rem; font-size: 0.78rem; font-weight: 800; color: var(--color-brand-700); background: rgb(255 255 255 / 0.85); box-shadow: 0 0 0 1px var(--color-brand-100), 0 4px 12px -6px rgb(10 91 150 / 0.25); }
+.eyebrow__dot { height: 0.45rem; width: 0.45rem; border-radius: 999px; background: var(--color-butter); box-shadow: 0 0 0 3px rgb(246 185 59 / 0.22); }
+
+/* Тёплый акцент: «маркер» под ключевыми словами заголовка */
+.hl { position: relative; white-space: nowrap; z-index: 0; }
+.hl::after { content: ""; position: absolute; left: -0.08em; right: -0.08em; bottom: 0.06em; height: 0.34em; z-index: -1; border-radius: 0.2em; background: linear-gradient(90deg, #ffd27a, #f6b93b); transform: skewX(-8deg); opacity: 0.85; }
+
+/* Тёплая кнопка */
+.btn-butter { background: linear-gradient(180deg, #ffcf6b, #f6b93b); color: #0a2747; box-shadow: 0 10px 22px -12px rgb(190 120 0 / 0.8); }
+.btn-butter:hover { background: linear-gradient(180deg, #ffd88a, #f4ae22); }
+.eyebrow--dark { color: var(--color-butter); background: rgb(246 185 59 / 0.12); box-shadow: 0 0 0 1px rgb(246 185 59 / 0.35); }
+.eyebrow--dark .eyebrow__dot { background: var(--color-butter); }
+
+/* Круглая иконка-преимущество */
+.perk-icon { display: flex; height: 3rem; width: 3rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 999px; color: var(--color-butter-700); background: linear-gradient(180deg, #fff9ec, #ffe8b5); box-shadow: 0 0 0 1px #ffe2a0, 0 8px 18px -10px rgb(190 120 0 / 0.5); }
+
+/* Волны между секциями (Cult UI SVG Bands) */
+.band { display: block; width: 100%; height: clamp(28px, 5vw, 64px); }
+
+/* Карусель продукции «в фокусе» (без наклона) */
+.focus-track {
+  --slide: min(78vw, 300px);
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  padding: 0.75rem calc(50% - var(--slide) / 2) 1.25rem;
+  cursor: grab;
+  touch-action: pan-x pan-y;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.focus-track.is-dragging { cursor: grabbing; scroll-snap-type: none; user-select: none; }
+.focus-slide { flex: 0 0 var(--slide); scroll-snap-align: center; }
+.focus-card { will-change: transform, opacity, filter; transition: box-shadow 0.3s; transform-origin: center 60%; }
+.focus-card img, .focus-card svg { -webkit-user-drag: none; }
+.carousel-arrow {
+  display: flex; height: 2.75rem; width: 2.75rem; align-items: center; justify-content: center;
+  border-radius: 999px; background: var(--color-surface); color: var(--color-brand-700);
+  box-shadow: var(--shadow-card); border: 1px solid var(--color-line); transition: background-color 0.15s, opacity 0.15s;
+}
+.carousel-arrow:hover { background: var(--color-brand-50); }
+.carousel-arrow:disabled { opacity: 0.35; pointer-events: none; }
+
+/* FAQ: плавное раскрытие (Chrome 131+; в остальных — мгновенно) */
+.faq::details-content { block-size: 0; overflow: hidden; transition: block-size 0.3s, content-visibility 0.3s allow-discrete; }
+.faq[open]::details-content { block-size: auto; }
+.faq summary::-webkit-details-marker { display: none; }
+html { interpolate-size: allow-keywords; }
+
+/* Появление блоков при прокрутке (без JS: scroll-driven animations, где поддерживаются) */
+@supports (animation-timeline: view()) {
+  .reveal { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+}
+
+/* «Почему выбирают» и карточки шагов — отдельные классы, чтобы их можно было перекрасить в тёмной теме */
+.why-bg { background: linear-gradient(180deg, var(--color-page) 0%, #fffbf3 50%, var(--color-butter-50) 100%); }
+.step-card { border-radius: 1.5rem; background: linear-gradient(180deg, var(--color-brand-50), var(--color-surface)); box-shadow: 0 0 0 1px var(--color-brand-100); }
+
+/* Цвета волн молока (SVG stop-color из CSS) */
+:root { --wave-hi: #ffffff; --wave-shade: #b9e3f6; --splash: #ffffff; --splash-shade: #c9e9f8; }
+.mw-hi { stop-color: var(--wave-hi); }
+.mw-shade { stop-color: var(--wave-shade); }
+.ms-hi { stop-color: var(--splash); }
+.ms-shade { stop-color: var(--splash-shade); }
+
+/* ================= ТЁМНАЯ ТЕМА =================
+   Включается атрибутом <html data-theme="dark"> (переключатель в шапке; по умолчанию — как в системе).
+   Основа — подмена цветовых токенов; ниже — точечные правки для мест с «белым» по смыслу. */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-page: #06111f;
+  --color-canvas: #06111f;
+  --color-surface: #0d1f33;
+  --color-night: #0b2440;
+  --color-ink: #e6f0f8;
+  --color-muted: #9bb0c4;
+  --color-line: #1d3651;
+  --color-brand-50: #0f2a44;
+  --color-brand-100: #183b5d;
+  --color-brand-200: #24547f;
+  --color-milk: #13263b;
+  --color-cream: #0e1f33;
+  --color-butter-50: #221c0f;
+  --color-butter-100: #3d3010;
+  --color-butter-700: #ffd27a;
+  --color-fresh: #5fd38a;
+  --color-fresh-50: #0f2e1d;
+  --color-aged: #f2b04a;
+  --color-aged-50: #33240c;
+  --color-danger: #ff7d6e;
+  --color-danger-50: #3a1714;
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -14px rgb(0 0 0 / 0.7);
+  --shadow-float: 0 16px 40px -10px rgb(0 0 0 / 0.75);
+  --wave-hi: #0b1c30;
+  --wave-shade: #12365a;
+  --splash: #17406a;
+  --splash-shade: #0d2a47;
+}
+/* текст-акценты: тёмно-синий → светлый */
+[data-theme="dark"] .text-brand-900 { color: #eef7fd; }
+[data-theme="dark"] .text-brand-700 { color: #7fd3f5; }
+[data-theme="dark"] .text-brand-600 { color: #4cc6f2; }
+/* «белые» поверхности */
+[data-theme="dark"] .bg-white { background-color: var(--color-surface); }
+[data-theme="dark"] .bg-white\/90, [data-theme="dark"] .bg-white\/95, [data-theme="dark"] .bg-white\/85 { background-color: rgb(13 31 51 / 0.92); }
+[data-theme="dark"] .bg-page { background-color: var(--color-page); }
+[data-theme="dark"] .glass { background: rgb(13 31 51 / 0.62); border-color: rgb(255 255 255 / 0.08); box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.8); }
+[data-theme="dark"] .eyebrow { background: rgb(13 31 51 / 0.85); box-shadow: 0 0 0 1px var(--color-line); color: #7fd3f5; }
+[data-theme="dark"] .eyebrow--dark { color: var(--color-butter); }
+[data-theme="dark"] .header-glass { background: rgb(6 17 31 / 0.66); box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.06); }
+[data-theme="dark"] .header-fade { background: linear-gradient(to bottom, rgb(6 17 31 / 0.5), rgb(6 17 31 / 0)); }
+[data-theme="dark"] .milk-bg { background: radial-gradient(70rem 32rem at 92% 10%, rgb(4 169 228 / 0.28) 0%, transparent 65%), radial-gradient(40rem 24rem at 0% 35%, rgb(246 185 59 / 0.08) 0%, transparent 70%), linear-gradient(180deg, #0a1f36 0%, #081a2d 55%, var(--color-page) 100%); }
+[data-theme="dark"] .milk-bg--soft { background: radial-gradient(44rem 20rem at 100% 50%, rgb(4 169 228 / 0.2) 0%, transparent 70%), linear-gradient(180deg, var(--color-page) 0%, #0a1d32 30%, #0a1d32 70%, var(--color-page) 100%); }
+[data-theme="dark"] .milk-glow--a { background: #0a6fa6; opacity: 0.35; }
+[data-theme="dark"] .milk-glow--b { background: #6b4a10; opacity: 0.25; }
+[data-theme="dark"] .milk-splash { opacity: 0.55; filter: none; }
+[data-theme="dark"] .why-bg { background: linear-gradient(180deg, var(--color-page) 0%, #0d1a28 50%, var(--color-butter-50) 100%); }
+[data-theme="dark"] .perk-icon { background: linear-gradient(180deg, #2a2210, #3d3010); box-shadow: 0 0 0 1px #4d3c12; }
+[data-theme="dark"] .carousel-arrow { color: #7fd3f5; }
+[data-theme="dark"] .btn-soft { color: #7fd3f5; }
+[data-theme="dark"] .btn-soft:hover { background: var(--color-brand-100); }
+[data-theme="dark"] .btn-primary:hover { background: #0b8bd6; }
+[data-theme="dark"] .btn-ghost { background: transparent; }
+[data-theme="dark"] .btn-ghost:hover { background: var(--color-brand-50); }
+[data-theme="dark"] details.faq[open] { background-color: var(--color-surface); }
+[data-theme="dark"] .focus-card { background: var(--color-surface); }
+[data-theme="dark"] .grain::after { opacity: 0.18; }
+[data-theme="dark"] .scene-cloth { opacity: 0.18; }
+[data-theme="dark"] img[src$="logo.png"] { box-shadow: 0 0 0 2px rgb(255 255 255 / 0.12); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
