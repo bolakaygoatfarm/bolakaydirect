@@ -25,8 +25,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
 
   return (
     <>
-      {/* ЧТО ПРОДАЁМ + ВЫБОР ТОЧКИ: видео молока управляется прокруткой */}
-      <HeroScrub hint={d.scroll_hint}>
+      {/* ЧТО ПРОДАЁМ + ВЫБОР ТОЧКИ: видео всплеска на фоне */}
+      <HeroScrub>
         <div className="max-w-xl animate-rise md:max-w-[34rem]">
           <span className="eyebrow">
             <span className="h-2 w-2 rounded-full bg-fresh" /> BOLAKAY DIRECT · Toshkent
@@ -57,8 +57,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
       </section>
 
       {/* ПОЧЕМУ ВЫБИРАЮТ */}
-      <section>
-        <WhyBlock lang={lang} className="pb-10 pt-6" />
+      <section className="why-bg">
+        <WhyBlock lang={lang} className="pb-20 pt-16" />
       </section>
 
       {/* ТРИ ШАГА */}

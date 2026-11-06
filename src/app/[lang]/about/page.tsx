@@ -49,11 +49,11 @@ export default async function AboutPage({ params }: PageProps<"/[lang]/about">) 
 
       {/* ПОЧЕМУ ВЫБИРАЮТ */}
       <section className="relative overflow-hidden why-bg">
-        <WhyBlock lang={lang} />
+        <WhyBlock lang={lang} className="pb-20 pt-16" />
       </section>
 
       {/* СВЕЖЕСТЬ — тёмная секция */}
-      <Wave className="bg-butter-50 text-night" />
+      <Wave className="bg-page text-night" />
       <section className="night">
         <div className="relative mx-auto max-w-5xl px-4 pb-16 pt-8">
           <div className="reveal grid gap-10 md:grid-cols-[1fr_1.05fr] md:items-center">
