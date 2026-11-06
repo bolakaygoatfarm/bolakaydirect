@@ -46,7 +46,7 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
 
       {/* АССОРТИМЕНТ */}
       <section className="relative overflow-hidden">
-        <MilkBackdrop variant="soft" />
+        <MilkBackdrop />
         <div className="relative mx-auto max-w-5xl px-4 pt-8">
           <H2 className="mt-0">{d.catalog_title}</H2>
           <p className="mt-3 max-w-xl text-ink/70">{d.catalog_hint}</p>

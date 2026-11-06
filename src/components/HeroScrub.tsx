@@ -180,7 +180,7 @@ export function HeroScrub({ children }: { children: ReactNode }) {
     <section ref={track} className="relative -mt-16">
       <div ref={panel} className="hero-panel sticky top-0 overflow-hidden">
         {!plain && <video ref={video} className="hero-video" muted playsInline preload="auto" aria-hidden />}
-        <div className="relative mx-auto flex h-full max-w-5xl flex-col justify-start px-4 pt-24 md:justify-center md:pt-16">
+        <div className="hero-content relative mx-auto flex h-full max-w-5xl flex-col justify-start px-4 pt-24 md:justify-center md:pt-16">
           {children}
         </div>
         <Wave className="absolute inset-x-0 bottom-0 text-page" />
