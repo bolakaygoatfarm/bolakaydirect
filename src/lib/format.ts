@@ -2,10 +2,31 @@ import type { Lang } from "./types";
 
 export const TZ = "Asia/Tashkent";
 
+/** Цена целиком в одну строку: все пробелы неразрывные */
 export function money(v: number, lang: Lang) {
-  if (lang === "en") return `${new Intl.NumberFormat("en-US").format(v)} UZS`;
-  const n = new Intl.NumberFormat("ru-RU").format(v).replace(/ /g, " ");
-  return `${n} ${lang === "uz" ? "so‘m" : "сум"}`;
+  if (lang === "en") return `${new Intl.NumberFormat("en-US").format(v)}\u00A0UZS`;
+  const n = new Intl.NumberFormat("ru-RU").format(v).replace(/\s/g, "\u00A0");
+  return `${n}\u00A0${lang === "uz" ? "so‘m" : "сум"}`;
+}
+
+/** Фасовка в единых обозначениях: 1 л, 250 мл, 400 г (ru); 0.5 l (en); uz как в базе */
+export function sizeLabel(label: string | null | undefined, lang: Lang): string {
+  if (!label) return "";
+  const s = label.trim();
+  if (lang === "ru") return s.replace(/\s*ml\b/i, "\u00A0мл").replace(/\s*l\b/i, "\u00A0л").replace(/\s*g\b/i, "\u00A0г");
+  if (lang === "en") return s.replace(",", ".").replace(/\s+/g, "\u00A0");
+  return s.replace(/\s+/g, "\u00A0");
+}
+
+/** Заглушка из первоначальных настроек (+998 90 000 00 00) не показывается покупателям */
+export function realPhone(p: string | null | undefined): string | null {
+  const d = (p ?? "").replace(/\D/g, "");
+  return d.length === 12 && d.startsWith("998") && !/^99890?0{7,}$/.test(d) ? `+${d}` : null;
+}
+
+/** +998901234567 → +998 90 123 45 67 */
+export function formatPhone(p: string): string {
+  return p.replace(/^\+(\d{3})(\d{2})(\d{3})(\d{2})(\d{2})$/, "+$1 $2 $3 $4 $5");
 }
 
 const UZ_MONTHS = ["yanvar", "fevral", "mart", "aprel", "may", "iyun", "iyul", "avgust", "sentabr", "oktabr", "noyabr", "dekabr"];

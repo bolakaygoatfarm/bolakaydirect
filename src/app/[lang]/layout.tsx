@@ -3,13 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import "../globals.css";
-import { manrope, unbounded } from "../fonts";
+import { onest } from "../fonts";
 import { Logo } from "@/components/Logo";
 import { Wave } from "@/components/Backdrop";
 import { LangSwitch } from "@/components/LangSwitch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthLinkForwarder } from "@/components/AuthLinkForwarder";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { getSupportPhone } from "@/lib/data";
+import { formatPhone } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import { isLang, LANGS } from "@/lib/types";
 import { SITE_URL } from "@/lib/supabase";
@@ -44,8 +46,9 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   const d = t(lang);
+  const phone = await getSupportPhone();
   return (
-    <html lang={lang} data-scroll-behavior="smooth" suppressHydrationWarning className={`${manrope.variable} ${unbounded.variable}`}>
+    <html lang={lang} data-scroll-behavior="smooth" suppressHydrationWarning className={onest.variable}>
       <head>
         {/* Тема ставится до отрисовки — без вспышки белого */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
@@ -67,7 +70,10 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
               <Link href={`/${lang}/points`} className="hidden rounded-full px-3 py-2 text-ink/80 hover:bg-brand-50 sm:block">
                 {d.nav_points}
               </Link>
-              <Link href={`/${lang}/orders`} aria-label={d.nav_orders} className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-2 text-ink/80 hover:bg-brand-50 sm:px-3">
+              <Link href={`/${lang}/about`} className="hidden rounded-full px-3 py-2 text-ink/80 hover:bg-brand-50 md:block">
+                {d.nav_about}
+              </Link>
+              <Link prefetch={false} href={`/${lang}/orders`} aria-label={d.nav_orders} className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-2 text-ink/80 hover:bg-brand-50 sm:px-3">
                 <svg viewBox="0 0 24 24" className="h-5 w-5 sm:hidden" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z" /><path d="M9 8h6M9 12h6M9 16h3" /></svg>
                 <span className="hidden sm:inline">{d.nav_orders}</span>
               </Link>
@@ -90,12 +96,12 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
             </div>
             <div className="flex flex-col gap-2">
               <Link className="hover:text-white" href={`/${lang}/points`}>{d.nav_points}</Link>
-              <Link className="hover:text-white" href={`/${lang}#farm`}>{d.nav_about}</Link>
-              <Link className="hover:text-white" href={`/${lang}/orders`}>{d.nav_orders}</Link>
+              <Link className="hover:text-white" href={`/${lang}/about`}>{d.nav_about}</Link>
+              <Link prefetch={false} className="hover:text-white" href={`/${lang}/orders`}>{d.nav_orders}</Link>
             </div>
             <div className="flex flex-col gap-2">
               <span className="font-bold text-butter">{d.support}</span>
-              <a className="hover:text-white" href="tel:+998900000000">+998 90 000 00 00</a>
+              {phone && <a className="hover:text-white" href={`tel:${phone}`}>{formatPhone(phone)}</a>}
               <span>© BOLAKAY GOAT FARM</span>
             </div>
           </div>

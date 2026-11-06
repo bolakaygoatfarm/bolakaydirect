@@ -5,7 +5,8 @@ import { browserClient } from "@/lib/supabase";
 import type { Category, Product } from "@/lib/types";
 import { ProductArt } from "../ProductArt";
 import { ErrorNote, Field, Modal, Section, fmtSum } from "./ui";
-import { s } from "./i18n";
+import { sizeLabel } from "@/lib/format";
+import { s, staffLang } from "./i18n";
 
 const CAT_RU: Record<Category, string> = { milk: "Молоко", yogurt: "Йогурт", butter: "Масло", drinks: "Напитки" };
 
@@ -36,7 +37,7 @@ export function ProductsTab() {
           <li key={p.id} className={`card flex gap-3 p-3 ${p.is_active ? "" : "opacity-60"}`}>
             <ProductArt category={p.category} image={p.image_url} alt="" className="h-20 w-20 shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1">
-              <p className="font-extrabold">{p.name_ru} · {p.size_label}</p>
+              <p className="font-extrabold">{p.name_ru} · {sizeLabel(p.size_label, staffLang())}</p>
               <p className="text-sm text-muted">{s(CAT_RU[p.category])} · {s("продаётся {0} дн.", p.sell_days)}</p>
               <p className="mt-1 font-bold text-brand-700">{fmtSum(p.price)}</p>
               {!p.is_active && <span className="chip mt-1 bg-danger-50 text-danger">{s("скрыт")}</span>}
@@ -48,6 +49,23 @@ export function ProductsTab() {
       {edit && <ProductForm initial={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); void load(); }} />}
     </Section>
   );
+}
+
+/** Сжимает фото в браузере. Если не получилось или стало больше — загружается исходный файл. */
+async function toWebp(file: File): Promise<Blob> {
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 1200 / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * k);
+    canvas.height = Math.round(bmp.height * k);
+    canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/webp", 0.82));
+    return blob && blob.type === "image/webp" && blob.size < file.size ? blob : file;
+  } catch {
+    return file;
+  }
 }
 
 function ProductForm({ initial, onClose, onSaved }: { initial: Partial<Product>; onClose: () => void; onSaved: () => void }) {
@@ -65,9 +83,11 @@ function ProductForm({ initial, onClose, onSaved }: { initial: Partial<Product>;
   async function upload(file: File) {
     if (file.size > 5 * 1024 * 1024) return setErr(s("Файл больше 5 МБ"));
     setBusy(true);
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    // Покупателям уходит сжатая копия: WebP, не больше 1200 px
+    const img = await toWebp(file);
+    const ext = img.type === "image/webp" ? "webp" : file.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${p.slug || "product"}-${Date.now()}.${ext}`;
-    const { error } = await sb.storage.from("product-images").upload(path, file, { contentType: file.type, upsert: false });
+    const { error } = await sb.storage.from("product-images").upload(path, img, { contentType: img.type, upsert: false, cacheControl: "31536000" });
     setBusy(false);
     if (error) return setErr(error.message);
     set("image_url", sb.storage.from("product-images").getPublicUrl(path).data.publicUrl);

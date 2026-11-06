@@ -23,7 +23,7 @@ export function ProductArt({
 }) {
   if (image) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={image} alt={alt} loading="lazy" className={`object-cover ${className}`} />;
+    return <img src={image} alt={alt} loading="lazy" decoding="async" className={`object-cover ${className}`} />;
   }
   return (
     <div className={`flex items-center justify-center bg-gradient-to-br ${BG[category]} ${className}`} role="img" aria-label={alt}>

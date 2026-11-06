@@ -1,11 +1,11 @@
 /**
- * Логотип BOLAKAY: козёл в полумесяце. Файлы — /public/logo.png (256px) и иконки icon-*.png.
+ * Логотип BOLAKAY: козёл в полумесяце. Файлы — /public/logo-96.webp (на сайте), logo.png (256px) и иконки icon-*.png.
  * Исходник: /public/logo-original.webp. Пересоздать размеры можно через sharp.
  */
 export function LogoMark({ className = "h-10 w-10" }: { className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- маленький статичный знак, оптимизация не нужна
-    <img src="/logo.png" alt="BOLAKAY" width={256} height={256} className={`rounded-full ${className}`} />
+    <img src="/logo-96.webp" alt="BOLAKAY" width={96} height={96} className={`rounded-full ${className}`} />
   );
 }
 

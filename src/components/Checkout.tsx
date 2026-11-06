@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { rememberOrder, useCart } from "@/lib/cart";
-import { addDays, formatPhoneInput, money, normalizePhone, pick, pickupSlots, shortDate, tashkentDate } from "@/lib/format";
+import { addDays, formatPhoneInput, money, normalizePhone, pick, pickupSlots, shortDate, sizeLabel, tashkentDate, tashkentTime } from "@/lib/format";
 import { errorText, t } from "@/lib/i18n";
 import { browserClient } from "@/lib/supabase";
 import { groupCatalog, type CatalogRow, type Fridge, type Lang, type PaymentMethod } from "@/lib/types";
 import { ProductArt } from "./ProductArt";
 import { Stepper } from "./PointCatalog";
 
-interface Settings { click_enabled: boolean; payme_enabled: boolean }
+interface Settings { click_enabled: boolean; payme_enabled: boolean; pickup_grace_minutes: number }
 
 export function Checkout({ lang }: { lang: Lang }) {
   const d = t(lang);
@@ -21,7 +21,7 @@ export function Checkout({ lang }: { lang: Lang }) {
 
   const [fridge, setFridge] = useState<Fridge | null>(null);
   const [rows, setRows] = useState<CatalogRow[] | null>(null);
-  const [settings, setSettings] = useState<Settings>({ click_enabled: false, payme_enabled: false });
+  const [settings, setSettings] = useState<Settings>({ click_enabled: false, payme_enabled: false, pickup_grace_minutes: 60 });
   const [loadErr, setLoadErr] = useState(false);
 
   const [phone, setPhone] = useState("");
@@ -39,7 +39,7 @@ export function Checkout({ lang }: { lang: Lang }) {
     const [f, c, s] = await Promise.all([
       sb.from("fridges").select("*").eq("code", code).maybeSingle(),
       sb.rpc("fridge_catalog", { p_code: code }),
-      sb.from("settings").select("click_enabled,payme_enabled").maybeSingle(),
+      sb.from("settings").select("click_enabled,payme_enabled,pickup_grace_minutes").maybeSingle(),
     ]);
     if (f.error || c.error) return setLoadErr(true);
     setFridge(f.data as Fridge | null);
@@ -55,8 +55,8 @@ export function Checkout({ lang }: { lang: Lang }) {
 
   const products = useMemo(() => groupCatalog(rows ?? []), [rows]);
   const index = useMemo(() => {
-    const m = new Map<string, { available: number; produced_at: string; p: (typeof products)[number] }>();
-    products.forEach((p) => p.batches.forEach((b) => m.set(b.batch_id, { available: b.available, produced_at: b.produced_at, p })));
+    const m = new Map<string, { available: number; produced_at: string; sell_until: string; p: (typeof products)[number] }>();
+    products.forEach((p) => p.batches.forEach((b) => m.set(b.batch_id, { available: b.available, produced_at: b.produced_at, sell_until: b.sell_until, p })));
     return m;
   }, [products]);
 
@@ -64,8 +64,32 @@ export function Checkout({ lang }: { lang: Lang }) {
   const total = items.reduce((s, i) => s + i.p.price * i.qty, 0);
 
   const today = tashkentDate();
-  const ymd = day === 0 ? today : addDays(today, 1);
-  const slots = useMemo(() => (fridge ? pickupSlots(fridge.open_time, fridge.close_time, ymd) : []), [fridge, ymd]);
+  const tomorrow = addDays(today, 1);
+
+  // Товар должен быть в сроке до конца интервала: те же правила проверяет сервер при оформлении.
+  // Берём самую раннюю партию в корзине — один заказ получают за один раз.
+  const lastSell = items.length ? Math.min(...items.map((i) => Date.parse(i.sell_until))) : Infinity;
+  const slotsFor = useCallback(
+    (date: string) => {
+      if (!fridge) return [];
+      return pickupSlots(fridge.open_time, fridge.close_time, date).filter((s) => Date.parse(`${date}T${s.split("-")[1]}:00+05:00`) <= lastSell);
+    },
+    [fridge, lastSell],
+  );
+  const tomorrowOpen = slotsFor(tomorrow).length > 0;
+  const tomorrowClosedByDate = !tomorrowOpen && !!fridge && pickupSlots(fridge.open_time, fridge.close_time, tomorrow).length > 0;
+  const activeDay = day === 1 && tomorrowOpen ? 1 : 0;
+  const ymd = activeDay === 0 ? today : tomorrow;
+  const slots = useMemo(() => slotsFor(ymd), [slotsFor, ymd]);
+  // До какого времени продержится бронь: конец интервала + ожидание, но не дольше срока продажи
+  const holdText = (date: string, s: string) => {
+    const end = Date.parse(`${date}T${s.split("-")[1]}:00+05:00`) + settings.pickup_grace_minutes * 60000;
+    return tashkentTime(new Date(Math.min(end, lastSell)));
+  };
+  // «Заберу сейчас» — текущий интервал сегодняшнего дня, пока точка работает
+  const nowHm = tashkentTime();
+  const nowSlot = slotsFor(today).find((s) => s.split("-")[0] <= nowHm && nowHm < s.split("-")[1]) ?? null;
+  const takeNowOn = !!nowSlot && activeDay === 0 && slot === nowSlot;
   useEffect(() => {
     // сбрасываем интервал, если он стал недоступен
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -119,7 +143,7 @@ export function Checkout({ lang }: { lang: Lang }) {
           <div key={i.batch_id} className="flex items-center gap-3 p-3">
             <ProductArt category={i.p.category} image={i.p.image_url} alt="" className="h-14 w-14 shrink-0 rounded-xl" />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-extrabold">{pick(i.p, "name", lang)} <span className="font-semibold text-muted">· {i.p.size_label}</span></p>
+              <p className="truncate font-extrabold">{pick(i.p, "name", lang)} <span className="font-semibold text-muted">· {sizeLabel(i.p.size_label, lang)}</span></p>
               <p className="text-xs text-muted">{d.produced}: {shortDate(i.produced_at, lang)}</p>
               <p className="text-sm font-bold text-brand-700">{money(i.p.price * i.qty, lang)}</p>
             </div>
@@ -145,15 +169,28 @@ export function Checkout({ lang }: { lang: Lang }) {
           <input id="name" className="field" autoComplete="given-name" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
+        {nowSlot && (
+          <button type="button" className="option justify-start gap-3 py-2.5 text-left" aria-pressed={takeNowOn} onClick={() => { setDay(0); setSlot(nowSlot); }}>
+            <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-butter-100 text-butter-700">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 3 5 14h6l-1 7 8-11h-6Z" /></svg>
+            </span>
+            <span>
+              {d.take_now}
+              <span className="block text-xs font-semibold text-muted">{d.take_now_d.replace("{time}", holdText(today, nowSlot))}</span>
+            </span>
+          </button>
+        )}
+
         <fieldset>
           <legend className="label">{d.pickup_day}</legend>
-          <div className="grid grid-cols-2 gap-2">
-            {([0, 1] as const).map((n) => (
-              <button type="button" key={n} className="option" aria-pressed={day === n} onClick={() => setDay(n)}>
-                {n === 0 ? d.today : d.tomorrow} · {shortDate(`${n === 0 ? today : addDays(today, 1)}T12:00:00+05:00`, lang)}
+          <div className={`grid gap-2 ${tomorrowOpen ? "grid-cols-2" : "grid-cols-1"}`}>
+            {(tomorrowOpen ? ([0, 1] as const) : ([0] as const)).map((n) => (
+              <button type="button" key={n} className="option" aria-pressed={activeDay === n} onClick={() => setDay(n)}>
+                {n === 0 ? d.today : d.tomorrow} · {shortDate(`${n === 0 ? today : tomorrow}T12:00:00+05:00`, lang)}
               </button>
             ))}
           </div>
+          {tomorrowClosedByDate && <p className="mt-2 text-xs font-semibold text-muted">{d.tomorrow_closed}</p>}
         </fieldset>
 
         <fieldset>
@@ -169,31 +206,33 @@ export function Checkout({ lang }: { lang: Lang }) {
           ) : (
             <p className="rounded-xl bg-aged-50 p-3 text-sm font-bold text-aged">{d.no_slots}</p>
           )}
+          {slot && slots.includes(slot) && <p className="mt-2 text-sm font-bold text-brand-700">{d.hold_until.replace("{time}", holdText(ymd, slot))}</p>}
         </fieldset>
 
         <fieldset>
           <legend className="label">{d.payment}</legend>
-          <div className="grid gap-2">
-            <label className="option justify-start gap-3 py-2 text-left">
-              <input type="radio" name="pay" className="h-5 w-5 accent-brand-600" checked={method === "on_pickup"} onChange={() => setMethod("on_pickup")} />
-              <span>{d.pay_on_pickup}<span className="block text-xs font-semibold text-muted">{d.pay_on_pickup_d}</span></span>
-            </label>
-            {(["click", "payme"] as const).map((m) => {
-              const enabled = m === "click" ? settings.click_enabled : settings.payme_enabled;
-              return (
-                <label key={m} className={`option justify-start gap-3 ${enabled ? "" : "cursor-not-allowed opacity-50"}`}>
-                  <input type="radio" name="pay" className="h-5 w-5 accent-brand-600" disabled={!enabled} checked={method === m} onChange={() => setMethod(m)} />
-                  <span>{m === "click" ? d.pay_click : d.pay_payme}{!enabled && <span className="ml-2 text-xs text-muted">({d.soon})</span>}</span>
+          {settings.click_enabled || settings.payme_enabled ? (
+            <div className="grid gap-2">
+              <label className="option justify-start gap-3 py-2 text-left">
+                <input type="radio" name="pay" className="h-5 w-5 accent-brand-600" checked={method === "on_pickup"} onChange={() => setMethod("on_pickup")} />
+                <span>{d.pay_on_pickup}<span className="block text-xs font-semibold text-muted">{d.pay_on_pickup_d}</span></span>
+              </label>
+              {(["click", "payme"] as const).filter((m) => (m === "click" ? settings.click_enabled : settings.payme_enabled)).map((m) => (
+                <label key={m} className="option justify-start gap-3">
+                  <input type="radio" name="pay" className="h-5 w-5 accent-brand-600" checked={method === m} onChange={() => setMethod(m)} />
+                  <span>{m === "click" ? d.pay_click : d.pay_payme}</span>
                 </label>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-xl bg-brand-50 px-4 py-3 font-bold">{d.pay_on_pickup}<span className="block text-xs font-semibold text-muted">{d.pay_on_pickup_d}</span></p>
+          )}
         </fieldset>
 
-        <div>
-          <label className="label" htmlFor="comment">{d.comment}</label>
-          <textarea id="comment" className="field min-h-20" maxLength={300} value={comment} onChange={(e) => setComment(e.target.value)} />
-        </div>
+        <details>
+          <summary className="cursor-pointer text-sm font-bold text-brand-700">{d.comment_add}</summary>
+          <textarea id="comment" aria-label={d.comment} className="field mt-2 min-h-20" maxLength={300} value={comment} onChange={(e) => setComment(e.target.value)} />
+        </details>
 
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0 accent-brand-600" checked={consent} onChange={(e) => setConsent(e.target.checked)} required />
@@ -206,6 +245,7 @@ export function Checkout({ lang }: { lang: Lang }) {
       <button className="btn btn-primary mt-6 w-full text-base" disabled={sending || !consent || !slot}>
         {sending ? d.placing : `${d.place_order} · ${money(total, lang)}`}
       </button>
+      {method === "on_pickup" && <p className="mt-2 text-center text-xs font-semibold text-muted">{d.pay_note}</p>}
     </form>
   );
 }

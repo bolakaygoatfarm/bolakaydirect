@@ -5,7 +5,7 @@ import { haptic } from "@/lib/haptic";
 import { t } from "@/lib/i18n";
 import type { Lang } from "@/lib/types";
 
-function legacyCopy(text: string): boolean {
+export function legacyCopy(text: string): boolean {
   try {
     const ta = document.createElement("textarea");
     ta.value = text;

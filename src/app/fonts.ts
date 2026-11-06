@@ -1,14 +1,10 @@
-import { Manrope, Unbounded } from "next/font/google";
+import { Onest } from "next/font/google";
 
-export const manrope = Manrope({
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  variable: "--font-manrope",
+// Один шрифт на весь сайт: современный, дружелюбный, с кириллицей и узбекской латиницей, переменная насыщенность.
+// preload: false — браузер берёт только нужные файлы; display: swap — текст виден сразу.
+export const onest = Onest({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-onest",
   display: "swap",
-});
-
-export const unbounded = Unbounded({
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  weight: ["500", "700"],
-  variable: "--font-unbounded",
-  display: "swap",
+  preload: false,
 });

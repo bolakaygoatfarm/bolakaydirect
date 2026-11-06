@@ -4,9 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCart, writeCart } from "@/lib/cart";
 import { haptic } from "@/lib/haptic";
-import { dateTime, daysAgo, formatPhoneInput, money, normalizePhone, pick, shortDate } from "@/lib/format";
+import { dateTime, daysAgo, formatPhoneInput, money, normalizePhone, pick, shortDate, sizeLabel } from "@/lib/format";
 import { errorText, t } from "@/lib/i18n";
-import { browserClient } from "@/lib/supabase";
+import { loadBrowserClient } from "@/lib/supabase-lazy";
 import type { CartLine, CatalogBatch, CatalogProduct, Category, Lang, PublicOrder } from "@/lib/types";
 import { CartIsland, type IslandItem } from "./CartIsland";
 import { ProductArt } from "./ProductArt";
@@ -46,7 +46,7 @@ export function PointCatalog({ lang, code, products, disabled }: { lang: Lang; c
     const rt = params.get("repeat");
     if (!rt || repeatDone.current || !/^[0-9a-f-]{36}$/i.test(rt)) return;
     repeatDone.current = true;
-    browserClient().rpc("get_order", { p_token: rt }).then(({ data }) => {
+    loadBrowserClient().then((sb) => sb.rpc("get_order", { p_token: rt })).then(({ data }) => {
       router.replace(`/${lang}/point/${code}`, { scroll: false });
       const o = data as PublicOrder | null;
       if (!o || o.fridge.code !== code) return;
@@ -60,7 +60,7 @@ export function PointCatalog({ lang, code, products, disabled }: { lang: Lang; c
         const b = p?.batches[0];
         if (!p || !b) {
           const it = o.items.find((i) => i.product_id === pid)!;
-          missing.push(`${pick(it, "name", lang)} ${it.size_label}`);
+          missing.push(`${pick(it, "name", lang)} ${sizeLabel(it.size_label, lang)}`);
           continue;
         }
         const ex = next.find((l) => l.batch_id === b.batch_id);
@@ -134,7 +134,7 @@ export function PointCatalog({ lang, code, products, disabled }: { lang: Lang; c
                 <button onClick={() => setOpen(p)} className="text-left">
                   <h3 className="text-[0.95rem] font-extrabold leading-snug">{pick(p, "name", lang)}</h3>
                   <p className="mt-0.5 text-xs font-semibold text-muted">
-                    {p.size_label}
+                    {sizeLabel(p.size_label, lang)}
                     {inStock > 0 ? ` · ${d.in_stock}: ${inStock}` : ""}
                   </p>
                 </button>
@@ -243,7 +243,7 @@ function ProductSheet({
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="font-display text-xl font-bold">{pick(p, "name", lang)}</h2>
-              <p className="mt-1 text-sm font-semibold text-muted">{p.size_label}</p>
+              <p className="mt-1 text-sm font-semibold text-muted">{sizeLabel(p.size_label, lang)}</p>
             </div>
             <p className="font-display text-xl font-bold text-brand-700">{money(p.price, lang)}</p>
           </div>
@@ -310,7 +310,7 @@ function PreorderForm({ lang, code, productId }: { lang: Lang; code: string; pro
     if (!p) return setErr(d.err_INVALID_PHONE);
     setErr(null);
     setState("sending");
-    const { error } = await browserClient().rpc("create_preorder", { p_fridge_code: code, p_phone: p, p_product_id: productId, p_qty: qty });
+    const { error } = await (await loadBrowserClient()).rpc("create_preorder", { p_fridge_code: code, p_phone: p, p_product_id: productId, p_qty: qty });
     if (error) {
       setErr(errorText(lang, error.message));
       setState("idle");
@@ -321,7 +321,7 @@ function PreorderForm({ lang, code, productId }: { lang: Lang; code: string; pro
 
   return (
     <form onSubmit={submit} className="mt-5 rounded-2xl bg-brand-50 p-4">
-      <p className="font-extrabold text-brand-900">{d.out_of_stock} · {d.preorder}</p>
+      <p className="font-extrabold text-brand-900">{d.out_of_stock}</p>
       <p className="mt-1 text-sm text-muted">{d.preorder_text}</p>
       <label className="label mt-3" htmlFor="pre-phone">{d.phone}</label>
       <div className="flex gap-2">

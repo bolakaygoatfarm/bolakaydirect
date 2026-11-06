@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "../globals.css";
-import { manrope, unbounded } from "../fonts";
+import { onest } from "../fonts";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 
 export default function StaffLayout({ children }: LayoutProps<"/staff">) {
   return (
-    <html lang="ru" suppressHydrationWarning className={`${manrope.variable} ${unbounded.variable}`}>
+    <html lang="ru" suppressHydrationWarning className={onest.variable}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>

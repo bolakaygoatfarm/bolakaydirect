@@ -5,7 +5,8 @@ import { browserClient } from "@/lib/supabase";
 import type { Fridge, OrderStatus } from "@/lib/types";
 import type { Me } from "./StaffApp";
 import { ErrorNote, Field, Modal, Section, fmtDT, fmtSum, staffError } from "./ui";
-import { s } from "./i18n";
+import { sizeLabel } from "@/lib/format";
+import { s, staffLang } from "./i18n";
 
 interface StaffOrder {
   id: string;
@@ -82,7 +83,7 @@ export function OrdersTab({ fridge, me }: { fridge: Fridge; me: Me }) {
               <ul className="mt-3 grid gap-1 text-sm">
                 {o.order_items.map((i, n) => (
                   <li key={n} className="flex justify-between gap-2">
-                    <span>{i.products?.name_ru} · {i.products?.size_label} <span className="text-muted">({i.batches ? fmtDT(i.batches.produced_at) : ""})</span></span>
+                    <span>{i.products?.name_ru} · {sizeLabel(i.products?.size_label, staffLang())} <span className="text-muted">({i.batches ? fmtDT(i.batches.produced_at) : ""})</span></span>
                     <b className="shrink-0">× {i.qty}</b>
                   </li>
                 ))}
@@ -121,10 +122,10 @@ function IssueModal({ order, onClose, onDone }: { order: StaffOrder; onClose: ()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (code.trim() !== order.pickup_code) return setErr(s("Код не совпадает. Попросите покупателя показать экран заказа."));
     setBusy(true);
     setErr(null);
-    const { error } = await browserClient().rpc("issue_order", { p_order_id: order.id, p_payment_provider: needsPayment ? pay : null });
+    // Код и срок партии проверяет сервер
+    const { error } = await browserClient().rpc("issue_order", { p_order_id: order.id, p_code: code.trim(), p_payment_provider: needsPayment ? pay : null });
     setBusy(false);
     if (error) setErr(staffError(error.message));
     else onDone();

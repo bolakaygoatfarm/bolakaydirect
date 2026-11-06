@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { browserClient } from "@/lib/supabase";
 import type { Fridge, Product } from "@/lib/types";
 import { ErrorNote, Field, Modal, Section, fmtDT, nowLocalInput, staffError, tashkentInputToISO } from "./ui";
-import { s, rich } from "./i18n";
+import { sizeLabel } from "@/lib/format";
+import { s, rich, staffLang } from "./i18n";
 
 export interface StaffBatch {
   id: string;
@@ -72,7 +73,7 @@ export function StockTab({ fridge }: { fridge: Fridge }) {
                 return (
                   <tr key={b.id}>
                     <td className="p-3">
-                      <p className="font-bold">{b.products?.name_ru} · {b.products?.size_label}</p>
+                      <p className="font-bold">{b.products?.name_ru} · {sizeLabel(b.products?.size_label, staffLang())}</p>
                       <p className="text-xs text-muted">{b.lot_code || b.id.slice(0, 8)}</p>
                       <span className={`chip mt-1 ${st.tone}`}>{st.label}</span>
                     </td>
@@ -140,7 +141,7 @@ export function ReceiveModal({ fridge, onClose, onDone }: { fridge: Fridge; onCl
       <form onSubmit={submit} className="grid gap-4">
         <Field label={s("Товар")}>
           <select className="field" value={productId} onChange={(e) => setProductId(e.target.value)} required>
-            {products.map((p) => <option key={p.id} value={p.id}>{p.name_ru} · {p.size_label}</option>)}
+            {products.map((p) => <option key={p.id} value={p.id}>{p.name_ru} · {sizeLabel(p.size_label, staffLang())}</option>)}
           </select>
         </Field>
         <div className="grid grid-cols-2 gap-3">
@@ -175,7 +176,7 @@ export function RemoveModal({ batch, onClose, onDone }: { batch: StaffBatch; onC
   }
 
   return (
-    <Modal title={`${batch.products?.name_ru} · ${batch.products?.size_label}`} onClose={onClose}>
+    <Modal title={`${batch.products?.name_ru} · ${sizeLabel(batch.products?.size_label, staffLang())}`} onClose={onClose}>
       <form onSubmit={submit} className="grid gap-4">
         <div className="grid grid-cols-2 gap-2">
           <button type="button" className="option" aria-pressed={kind === "withdraw"} onClick={() => setKind("withdraw")}>{s("Изъять (вернуть на ферму)")}</button>

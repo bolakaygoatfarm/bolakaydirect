@@ -5,9 +5,6 @@
 export function MilkBackdrop({ variant = "hero" }: { variant?: "hero" | "soft" }) {
   return (
     <div aria-hidden className={`milk-bg ${variant === "soft" ? "milk-bg--soft" : ""}`}>
-      <span className="milk-glow milk-glow--a" />
-      <span className="milk-glow milk-glow--b" />
-
       {/* Шёлковые волны снизу */}
       <svg className="milk-waves" viewBox="0 0 1440 320" preserveAspectRatio="none">
         <defs>
@@ -26,11 +23,11 @@ export function MilkBackdrop({ variant = "hero" }: { variant?: "hero" | "soft" }
             <stop offset="1" className="mw-hi" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <g className="milk-sway-1">
+        <g>
           <path d="M0 150C220 70 420 210 700 160S1180 40 1440 110V320H0Z" fill="url(#mw-shade)" />
           <path d="M0 175C240 95 450 235 720 185S1190 75 1440 135V320H0Z" fill="url(#mw-a)" />
         </g>
-        <g className="milk-sway-2">
+        <g>
           <path d="M0 238C260 180 520 290 820 240S1250 170 1440 205V320H0Z" fill="url(#mw-shade)" opacity="0.7" />
           <path d="M0 258C270 205 530 305 830 262S1260 196 1440 228V320H0Z" fill="url(#mw-b)" />
         </g>

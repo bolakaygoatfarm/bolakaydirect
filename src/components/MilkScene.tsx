@@ -34,8 +34,8 @@ export function MilkScene({ className = "" }: { className?: string }) {
           <stop offset="0" stopColor="#5cc46a" />
           <stop offset="1" stopColor="#2f8a53" />
         </linearGradient>
-        <radialGradient id="sc-fade-g" cx="50%" cy="80%" r="55%">
-          <stop offset="0.55" stopColor="#fff" />
+        <radialGradient id="sc-fade-g" cx="50%" cy="80%" r="46%">
+          <stop offset="0.45" stopColor="#fff" />
           <stop offset="1" stopColor="#000" />
         </radialGradient>
         <mask id="sc-fade" maskUnits="userSpaceOnUse" x="0" y="0" width="520" height="480">

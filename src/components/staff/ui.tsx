@@ -8,6 +8,8 @@ export const STAFF_ERRORS: Record<string, string> = {
   ORDER_NOT_FOUND: "Заказ не найден",
   ORDER_NOT_ISSUABLE: "Заказ нельзя выдать в текущем статусе",
   NOT_PAID: "Заказ не оплачен",
+  WRONG_CODE: "Код не совпадает. Попросите покупателя показать экран заказа.",
+  BATCH_EXPIRED: "Срок продажи товара истёк — выдавать нельзя. Отмените заказ и изымите партию.",
   CANNOT_CANCEL: "Этот заказ нельзя отменить",
   REASON_REQUIRED: "Укажите причину",
   INVALID_QTY: "Неверное количество",

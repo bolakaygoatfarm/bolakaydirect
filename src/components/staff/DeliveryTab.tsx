@@ -5,7 +5,8 @@ import { browserClient } from "@/lib/supabase";
 import type { Fridge } from "@/lib/types";
 import { Section, fmtDT } from "./ui";
 import { batchState, type StaffBatch } from "./StockTab";
-import { s } from "./i18n";
+import { sizeLabel } from "@/lib/format";
+import { s, staffLang } from "./i18n";
 
 interface Preorder {
   id: string;
@@ -59,7 +60,7 @@ export function DeliveryTab({ fridges }: { fridges: Fridge[] }) {
           const live = bs.filter((b) => !batchState(b, now).expired);
           return {
             pid,
-            name: name ? `${name.name_ru} · ${name.size_label}` : pid,
+            name: name ? `${name.name_ru} · ${sizeLabel(name.size_label, staffLang())}` : pid,
             stock: live.reduce((s, b) => s + b.qty_on_hand - b.qty_reserved, 0),
             reserved: bs.reduce((s, b) => s + b.qty_reserved, 0),
             pre: fp.filter((p) => p.product_id === pid && p.status === "waiting").reduce((s, p) => s + p.qty, 0),
@@ -97,7 +98,7 @@ export function DeliveryTab({ fridges }: { fridges: Fridge[] }) {
                 {fp.map((p) => (
                   <li key={p.id} className="card flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
                     <span>
-                      <b>{p.products?.name_ru} · {p.products?.size_label} × {p.qty}</b>
+                      <b>{p.products?.name_ru} · {sizeLabel(p.products?.size_label, staffLang())} × {p.qty}</b>
                       <span className="text-muted"> · {fmtDT(p.created_at)} · </span>
                       <a className="font-bold text-brand-700" href={`tel:${p.customers?.phone}`}>{p.customers?.phone}</a>
                       {p.status === "notified" && <span className="chip ml-2 bg-brand-50 text-brand-700">{s("уведомлён")}</span>}

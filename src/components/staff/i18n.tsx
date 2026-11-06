@@ -100,6 +100,7 @@ const DICT: Record<string, [string, string]> = {
   "Заказ не найден": ["Buyurtma topilmadi", "Order not found"],
   "Заказ нельзя выдать в текущем статусе": ["Buyurtmani joriy holatida berib bo‘lmaydi", "The order can’t be issued in its current status"],
   "Заказ не оплачен": ["Buyurtma to‘lanmagan", "The order is not paid"],
+  "Срок продажи товара истёк — выдавать нельзя. Отмените заказ и изымите партию.": ["Mahsulotning sotuv muddati tugagan — berish mumkin emas. Buyurtmani bekor qiling va partiyani olib qo‘ying.", "The selling period has ended — do not hand this out. Cancel the order and remove the batch."],
   "Этот заказ нельзя отменить": ["Bu buyurtmani bekor qilib bo‘lmaydi", "This order can’t be cancelled"],
   "Укажите причину": ["Sababini kiriting", "Enter a reason"],
   "Неверное количество": ["Miqdor noto‘g‘ri", "Invalid quantity"],

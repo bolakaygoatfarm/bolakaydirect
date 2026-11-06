@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { rememberOrder } from "@/lib/cart";
-import { dateTime, money, pick, shortDate } from "@/lib/format";
+import { addDays, dateTime, formatPhone, money, pick, realPhone, shortDate, sizeLabel, tashkentDate, tashkentTime } from "@/lib/format";
 import { errorText, t } from "@/lib/i18n";
 import { browserClient } from "@/lib/supabase";
 import type { Lang, OrderStatus, PublicOrder } from "@/lib/types";
 import { mapUrlClient } from "./mapUrl";
-import { PickupCode } from "./PickupCode";
+import { PickupCode, legacyCopy } from "./PickupCode";
 
 const TONE: Record<OrderStatus, string> = {
   pending_payment: "bg-aged-50 text-aged",
@@ -22,18 +22,25 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
   const d = t(lang);
   const [order, setOrder] = useState<PublicOrder | null | undefined>(undefined);
   const [bot, setBot] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [now, setNow] = useState(0); // время последней проверки статуса
 
   const load = useCallback(async () => {
     const { data, error } = await browserClient().rpc("get_order", { p_token: token });
     if (error) return setErr(d.err_generic);
     setOrder((data as PublicOrder | null) ?? null);
+    setNow(Date.now());
   }, [token, d.err_generic]);
 
   useEffect(() => {
-    browserClient().from("settings").select("telegram_bot_username").maybeSingle()
-      .then(({ data }) => setBot((data?.telegram_bot_username as string | null) ?? null));
+    browserClient().from("settings").select("telegram_bot_username,support_phone").maybeSingle()
+      .then(({ data }) => {
+        setBot((data?.telegram_bot_username as string | null) ?? null);
+        setPhone(realPhone((data?.support_phone as string | null) ?? null));
+      });
   }, []);
 
   useEffect(() => {
@@ -44,6 +51,30 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
     const id = setInterval(() => document.visibilityState === "visible" && load(), 20000);
     return () => clearInterval(id);
   }, [load, token]);
+
+  // Ссылка — единственный ключ к заказу с другого устройства: на телефоне открываем «Поделиться», иначе копируем
+  async function saveLink() {
+    const url = window.location.href;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: `BOLAKAY · ${d.order}`, url });
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return; // пользователь закрыл окно
+      }
+    }
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(url);
+      ok = true;
+    } catch {
+      ok = legacyCopy(url);
+    }
+    if (ok) {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    }
+  }
 
   async function cancel() {
     if (!confirm(d.cancel_confirm)) return;
@@ -60,16 +91,35 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
   const active = order.status === "confirmed" || order.status === "pending_payment";
   const map = mapUrlClient(order.fridge);
 
+  // Забронировано ≠ готово к выдаче: «Можно забирать» появляется только с начала выбранного интервала
+  const slotStart = Date.parse(`${order.pickup_date}T${order.pickup_slot.split("-")[0]}:00+05:00`);
+  const ready = order.status === "confirmed" && now >= slotStart;
+  const today = tashkentDate(now ? new Date(now) : undefined);
+  const dayText =
+    order.pickup_date === today ? d.today.toLowerCase()
+    : order.pickup_date === addDays(today, 1) ? d.tomorrow.toLowerCase()
+    : shortDate(`${order.pickup_date}T12:00:00+05:00`, lang);
+  const slotText = order.pickup_slot.replace("-", "–");
+  const paid = order.payment_status === "paid";
+
   return (
     <div className="mx-auto max-w-lg px-4 pb-16 pt-6">
       <p className="text-sm font-bold text-muted">{d.order} № {order.number}</p>
-      <span className={`chip mt-2 px-3 py-1.5 text-sm ${TONE[order.status]}`}>{d[`st_${order.status}`]}</span>
+      <span className={`chip mt-2 px-3 py-1.5 text-sm ${ready ? TONE.confirmed : order.status === "confirmed" ? "bg-brand-50 text-brand-700" : TONE[order.status]}`}>
+        {ready ? d.st_ready : d[`st_${order.status}`]}
+      </span>
+      {active && (
+        <p className="mt-2 font-extrabold text-ink">
+          {ready ? `${d.ready_until} ${tashkentTime(new Date(order.reserved_until))}` : `${d.pickup_at}: ${dayText}, ${slotText}`}
+        </p>
+      )}
 
       {active && (
         <section className="grain relative mt-5 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-6 text-center text-white shadow-[var(--shadow-float)]">
           <p className="text-sm font-bold uppercase tracking-widest text-white/75">{d.pickup_code}</p>
           <PickupCode code={order.pickup_code} lang={lang} />
           <p className="mt-3 text-sm text-white/85">{d.pickup_code_hint}</p>
+          {!paid && <p className="mt-1 text-xs text-white/75">{d.code_not_payment}</p>}
         </section>
       )}
 
@@ -98,6 +148,12 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
         <Row k={d.pickup_at} v={`${shortDate(`${order.pickup_date}T12:00:00+05:00`, lang)}, ${order.pickup_slot.replace("-", "–")}`} />
         {active && <Row k={d.reserved_until} v={dateTime(order.reserved_until, lang)} />}
         <Row k={d.payment} v={order.payment_method === "on_pickup" ? d.pay_on_pickup : order.payment_method.toUpperCase()} />
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted">{d.pay_status}</span>
+          <span className={`chip ${paid ? "bg-fresh-50 text-fresh" : order.payment_status === "refunded" ? "bg-brand-50 text-brand-700" : "bg-aged-50 text-aged"}`}>
+            {d[`pay_${order.payment_status}`]}
+          </span>
+        </div>
         {map && (
           <a href={map} target="_blank" rel="noopener noreferrer" className="btn btn-soft mt-1">{d.on_map} ↗</a>
         )}
@@ -107,7 +163,7 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
         {order.items.map((i, n) => (
           <div key={n} className="flex items-center justify-between gap-3 p-4 text-sm">
             <div>
-              <p className="font-extrabold">{pick(i, "name", lang)} · {i.size_label}</p>
+              <p className="font-extrabold">{pick(i, "name", lang)} · {sizeLabel(i.size_label, lang)}</p>
               <p className="text-xs text-muted">{d.produced}: {shortDate(i.produced_at, lang)} · {d.expires}: {shortDate(i.expires_at, lang)}</p>
             </div>
             <p className="shrink-0 font-bold">{i.qty} × {money(i.price, lang)}</p>
@@ -122,6 +178,8 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
       {err && <p className="mt-4 rounded-xl bg-danger-50 p-3 text-sm font-bold text-danger" role="alert">{err}</p>}
 
       <div className="mt-6 grid gap-2">
+        <button type="button" onClick={saveLink} className="btn btn-soft" aria-live="polite">{linkCopied ? d.link_copied : d.save_link}</button>
+        {phone && <a href={`tel:${phone}`} className="btn btn-ghost">{d.call_support} · {formatPhone(phone)}</a>}
         <Link href={`/${lang}/point/${order.fridge.code}`} className="btn btn-ghost">{d.back_to_point}</Link>
         {active && order.payment_status === "unpaid" && (
           <button onClick={cancel} disabled={busy} className="btn btn-danger">{d.cancel_order}</button>

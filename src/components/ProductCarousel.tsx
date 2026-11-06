@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { money, pick } from "@/lib/format";
+import { money, pick, sizeLabel } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import type { Lang, Product } from "@/lib/types";
 import { ProductArt } from "./ProductArt";
@@ -25,6 +25,7 @@ export function ProductCarousel({ lang, products }: { lang: Lang; products: Prod
     const el = track.current;
     if (!el) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const touch = window.matchMedia("(hover: none)").matches;
     const mid = el.scrollLeft + el.clientWidth / 2;
     let best = 0;
     let bestDist = Infinity;
@@ -44,7 +45,8 @@ export function ProductCarousel({ lang, products }: { lang: Lang; products: Prod
       }
       inner.style.transform = `scale(${1 - 0.1 * Math.min(k, 1)})`;
       inner.style.opacity = String(1 - 0.5 * Math.min(k, 1));
-      inner.style.filter = k > 0.05 ? `blur(${(2.5 * Math.min(k, 1)).toFixed(2)}px)` : "none";
+      // Размытие — только на компьютере: на телефоне при свайпе оно дорого обходится
+      if (!touch) inner.style.filter = k > 0.05 ? `blur(${(2.5 * Math.min(k, 1)).toFixed(2)}px)` : "none";
     });
     if (best !== activeRef.current) {
       activeRef.current = best;
@@ -124,13 +126,13 @@ export function ProductCarousel({ lang, products }: { lang: Lang; products: Prod
       >
         {products.map((p, i) => (
           <div key={p.id} className="focus-slide" aria-roledescription="slide" aria-label={`${i + 1} / ${products.length}`}>
-            <article className="focus-card card flex h-full flex-col overflow-hidden">
-              <ProductArt category={p.category} image={p.image_url} alt={pick(p, "name", lang)} className="aspect-[4/3] w-full" />
-              <div className="flex flex-1 flex-col p-5">
+            <article className="focus-card glass-card flex h-full flex-col overflow-hidden">
+              <ProductArt category={p.category} image={p.image_url} alt={pick(p, "name", lang)} className="aspect-[4/3] w-full rounded-[1.15rem]" />
+              <div className="flex flex-1 flex-col p-4">
                 <span className="chip w-fit bg-brand-50 text-brand-700">{d[`cat_${p.category}`]}</span>
                 <h3 className="mt-3 text-lg font-extrabold leading-snug">{pick(p, "name", lang)}</h3>
                 <p className="mt-0.5 text-sm font-semibold text-muted">
-                  {p.size_label} · {d.sell_days_label}: {p.sell_days} {d.days_short}
+                  {sizeLabel(p.size_label, lang)} · {d.sell_days_label}: {p.sell_days} {d.days_short}
                 </p>
                 <div className="mt-auto flex items-end justify-between gap-3 pt-5">
                   <p className="font-display text-xl font-bold text-brand-700">{money(p.price, lang)}</p>

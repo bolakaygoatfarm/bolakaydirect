@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { money, pick } from "@/lib/format";
+import { money, pick, sizeLabel } from "@/lib/format";
 import { t } from "@/lib/i18n";
 import type { CatalogBatch, CatalogProduct, Lang } from "@/lib/types";
 import { RollingNumber } from "./RollingNumber";
@@ -53,7 +53,7 @@ export function CartIsland({
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold">{pick(i.product, "name", lang)}</p>
                         <p className="text-xs text-white/60">
-                          {i.product.size_label} · {money(i.product.price, lang)}
+                          {sizeLabel(i.product.size_label, lang)} · {money(i.product.price, lang)}
                         </p>
                       </div>
                       <div className="flex h-9 items-center gap-1 rounded-full bg-white/10 p-0.5">

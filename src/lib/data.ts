@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { realPhone } from "./format";
 import { publicClient } from "./supabase";
 import { groupCatalog, type CatalogRow, type Fridge, type Product } from "./types";
 
@@ -20,6 +21,15 @@ export async function getFridges(): Promise<Fridge[]> {
   const { data, error } = await publicClient().from("fridges").select("*").neq("status", "inactive").order("code");
   if (error) throw new Error(error.message);
   return data as Fridge[];
+}
+
+/** Телефон поддержки из настроек (Админка → Настройки). Пока там заглушка — вернёт null. */
+export async function getSupportPhone(): Promise<string | null> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag("settings");
+  const { data } = await publicClient().from("settings").select("support_phone").maybeSingle();
+  return realPhone((data?.support_phone as string | null) ?? null);
 }
 
 export async function getFridge(code: string): Promise<Fridge | null> {
