@@ -265,7 +265,26 @@ async function onSupportMessage(c: Cfg, msg: TgMessage, lang: Lang) {
   return send(chatId, T[lang].support_sent);
 }
 
+/** Обращение пришло из бота заказов: ответ отправляем через него, этому боту покупатель мог не писать */
+async function replyViaShopBot(msg: TgMessage, chatId: number) {
+  const shopToken = Deno.env.get("TELEGRAM_SHOP_BOT_TOKEN") ?? "";
+  let ok = false;
+  if (shopToken) {
+    const { data } = await db.rpc("shop_user", { p_chat_id: chatId });
+    const head = { uz: "💬 <b>BOLAKAY yordam xizmati:</b>", ru: "💬 <b>Поддержка BOLAKAY:</b>", en: "💬 <b>BOLAKAY support:</b>" }[(data?.lang ?? "uz") as "uz" | "ru" | "en"];
+    const r = await fetch(`https://api.telegram.org/bot${shopToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: `${head}\n${esc(msg.text)}`, parse_mode: "HTML" }),
+    });
+    ok = (await r.json().catch(() => ({ ok: false }))).ok === true;
+  }
+  await tg("setMessageReaction", { chat_id: msg.chat.id, message_id: msg.message_id, reaction: [{ type: "emoji", emoji: ok ? "👍" : "👎" }] });
+}
+
 async function onAdminReply(msg: TgMessage) {
+  const shop = msg.reply_to_message?.text?.match(/#s(\d+)/);
+  if (shop && msg.text) return replyViaShopBot(msg, Number(shop[1]));
   const m = msg.reply_to_message?.text?.match(/#u(-?\d+)/);
   if (!m || !msg.text) return;
   const target = Number(m[1]);

@@ -5,6 +5,7 @@ import { browserClient } from "@/lib/supabase";
 import type { Me } from "./StaffApp";
 import { ErrorNote, Field, Section, staffError } from "./ui";
 import { TelegramSettings } from "./TelegramSettings";
+import { ShopBotSettings } from "./ShopBotSettings";
 import { s } from "./i18n";
 
 interface S { payment_hold_minutes: number; pickup_grace_minutes: number; support_phone: string | null; click_enabled: boolean; payme_enabled: boolean }
@@ -74,6 +75,7 @@ export function SettingsTab({ me }: { me: Me }) {
       </Section>
 
       <TelegramSettings />
+      <ShopBotSettings />
 
       <Section title={s("Сотрудники")}>
         <ul className="grid gap-2">

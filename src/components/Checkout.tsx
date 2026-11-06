@@ -7,6 +7,7 @@ import { rememberOrder, useCart } from "@/lib/cart";
 import { addDays, formatPhoneInput, money, normalizePhone, pick, pickupSlots, shortDate, sizeLabel, tashkentDate, tashkentTime } from "@/lib/format";
 import { errorText, t } from "@/lib/i18n";
 import { browserClient } from "@/lib/supabase";
+import { linkOrderToBot } from "@/lib/telegram-webapp";
 import { groupCatalog, type CatalogRow, type Fridge, type Lang, type PaymentMethod } from "@/lib/types";
 import { ProductArt } from "./ProductArt";
 import { Stepper } from "./PointCatalog";
@@ -122,6 +123,7 @@ export function Checkout({ lang }: { lang: Lang }) {
     }
     const token = (data as { token: string }).token;
     rememberOrder(token);
+    await linkOrderToBot(token);
     clear();
     router.replace(`/${lang}/order/${token}`);
   }

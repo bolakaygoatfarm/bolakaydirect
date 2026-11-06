@@ -313,6 +313,20 @@ const DICT: Record<string, [string, string]> = {
   "Или отправьте боту команду `/admin {0}`. Код действует 15 минут.": ["Yoki botga `/admin {0}` buyrug‘ini yuboring. Kod 15 daqiqa amal qiladi.", "Or send the bot the command `/admin {0}`. The code is valid for 15 minutes."],
   "Получить код подключения": ["Ulanish kodini olish", "Get a connection code"],
 
+  // Бот для заказов
+  "Бот для заказов": ["Buyurtmalar boti", "Ordering bot"],
+  "Токен не задан. Добавьте секрет TELEGRAM_SHOP_BOT_TOKEN в Supabase → Edge Functions → Secrets (шаг 2 ниже).": ["Token berilmagan. TELEGRAM_SHOP_BOT_TOKEN sirini Supabase → Edge Functions → Secrets ga qo‘shing (quyidagi 2-qadam).", "The token is not set. Add the TELEGRAM_SHOP_BOT_TOKEN secret in Supabase → Edge Functions → Secrets (step 2 below)."],
+  "Это токен первого бота. Для бота заказов создайте в @BotFather отдельного бота.": ["Bu birinchi botning tokeni. Buyurtmalar uchun @BotFather’da alohida bot yarating.", "This is the first bot’s token. Create a separate bot in @BotFather for orders."],
+  "Бот @{0} подключён. Кнопка Web App открывает: {1}": ["@{0} boti ulandi. Web App tugmasi ochadi: {1}", "Bot @{0} connected. The Web App button opens: {1}"],
+  "Не удалось связаться с функцией telegram-shop.": ["telegram-shop funksiyasi bilan bog‘lanib bo‘lmadi.", "Couldn’t reach the telegram-shop function."],
+  "Покупателей: {0}": ["Xaridorlar: {0}", "Customers: {0}"],
+  "Заказов из бота: {0}": ["Botdan buyurtmalar: {0}", "Orders from the bot: {0}"],
+  "В Telegram откройте **@BotFather** → `/newbot` → задайте имя и username нового бота. Скопируйте токен.": ["Telegram’da **@BotFather** ni oching → `/newbot` → yangi botga nom va username bering. Tokenni nusxalang.", "In Telegram open **@BotFather** → `/newbot` → set a name and username for the new bot. Copy the token."],
+  "Supabase → проект **bolakay-direct** → **Edge Functions → Secrets** → добавьте секрет `TELEGRAM_SHOP_BOT_TOKEN` со значением токена.": ["Supabase → **bolakay-direct** loyihasi → **Edge Functions → Secrets** → `TELEGRAM_SHOP_BOT_TOKEN` sirini token qiymati bilan qo‘shing.", "Supabase → project **bolakay-direct** → **Edge Functions → Secrets** → add the `TELEGRAM_SHOP_BOT_TOKEN` secret with the token value."],
+  "Откройте эту панель на **боевом адресе сайта** и нажмите кнопку ниже: бот получит webhook, команды и кнопку Web App.": ["Ushbu panelni **saytning asosiy manzilida** oching va quyidagi tugmani bosing: bot webhook, buyruqlar va Web App tugmasini oladi.", "Open this panel on the **live site address** and press the button below: the bot will get its webhook, commands and Web App button."],
+  "Сейчас адрес сайта — {0}. Кнопка Web App работает только с адресом https.": ["Hozir sayt manzili — {0}. Web App tugmasi faqat https manzil bilan ishlaydi.", "The current site address is {0}. The Web App button only works with an https address."],
+  "Ссылка на бота: **t.me/{0}**. Новые заказы и вопросы покупателей приходят в чат администратора первого бота, там же отвечайте через Reply.": ["Bot havolasi: **t.me/{0}**. Yangi buyurtmalar va xaridorlar savollari birinchi botning administrator chatiga keladi, u yerda Reply orqali javob bering.", "Bot link: **t.me/{0}**. New orders and customer questions arrive in the first bot’s admin chat; answer there with Reply."],
+
   // Температура
   "Введите число": ["Raqam kiriting", "Enter a number"],
   "Журнал температуры · {0}": ["Harorat jurnali · {0}", "Temperature log · {0}"],

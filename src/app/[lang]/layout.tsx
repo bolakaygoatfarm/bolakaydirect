@@ -9,6 +9,7 @@ import { Wave } from "@/components/Backdrop";
 import { LangSwitch } from "@/components/LangSwitch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AuthLinkForwarder } from "@/components/AuthLinkForwarder";
+import { TelegramWebApp } from "@/components/TelegramWebApp";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { getSupportPhone } from "@/lib/data";
 import { formatPhone } from "@/lib/format";
@@ -53,8 +54,9 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
         {/* Тема ставится до отрисовки — без вспышки белого */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="flex min-h-dvh flex-col">
+      <body className="site-body flex min-h-dvh flex-col">
         <AuthLinkForwarder />
+        <TelegramWebApp />
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 btn btn-primary">
           {{ uz: "Asosiy qismga o‘tish", ru: "К содержимому", en: "Skip to content" }[lang]}
         </a>
