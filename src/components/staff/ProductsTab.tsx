@@ -105,6 +105,9 @@ function ProductForm({ initial, onClose, onSaved }: { initial: Partial<Product>;
       sell_days: Number(rest.sell_days),
       sort: Number(rest.sort) || 0,
       net_amount: rest.net_amount ? Number(rest.net_amount) : null,
+      mxik_code: rest.mxik_code?.trim() || null,
+      package_code: rest.package_code?.trim() || null,
+      vat_percent: Number(rest.vat_percent) || 0,
     };
     const res = id ? await sb.from("products").update(payload).eq("id", id) : await sb.from("products").insert(payload);
     setBusy(false);
@@ -135,6 +138,9 @@ function ProductForm({ initial, onClose, onSaved }: { initial: Partial<Product>;
           </Field>
           <Field label={s("Дней в продаже")}><input className="field" type="number" min={1} max={90} value={p.sell_days ?? 2} onChange={(e) => set("sell_days", Number(e.target.value))} required /></Field>
           <Field label={s("Порядок")}><input className="field" type="number" value={p.sort ?? 0} onChange={(e) => set("sort", Number(e.target.value))} /></Field>
+          <Field label={s("ИКПУ (для чека Payme)")}><input {...txt("mxik_code")} inputMode="numeric" /></Field>
+          <Field label={s("Код упаковки")}><input {...txt("package_code")} inputMode="numeric" /></Field>
+          <Field label={s("НДС, %")}><input className="field" type="number" min={0} max={100} value={p.vat_percent ?? 0} onChange={(e) => set("vat_percent", Number(e.target.value))} /></Field>
         </div>
         <p className="rounded-xl bg-brand-50 p-3 text-xs">{s("«Дней в продаже» = 2 → товар продаётся в день производства и на следующий день, на третий день автоматически скрывается.")}</p>
         <Field label={s("Описание (UZ)")}><textarea {...txt("description_uz")} /></Field>

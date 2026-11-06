@@ -42,6 +42,9 @@ interface Cfg {
   bot_username: string | null;
   support_phone: string | null;
   pickup_grace_minutes: number;
+  payment_hold_minutes: number;
+  click_enabled: boolean;
+  payme_enabled: boolean;
 }
 let cfgCache: { v: Cfg; at: number } | null = null;
 async function cfg(fresh = false): Promise<Cfg> {
@@ -112,6 +115,8 @@ const T = {
     confirm: "<b>Buyurtmani tekshiring</b>", pickup: "Olib ketish", hold: "Band qilingan vaqt", name: "Ism", phone: "Telefon", comment: "Izoh", point: "Nuqta",
     pay: "To‘lov: olayotganda", pay_note: "Oldindan to‘lov shart emas.",
     consent: "Tugmani bosish orqali buyurtmani bajarish uchun telefon raqamim qayta ishlanishiga roziman.",
+    pay_with: (p: string) => `💳 ${p} orqali to‘lash`, pay_btn: "💳 To‘lash", pay_online: "To‘lov", pay_fail: "To‘lov sahifasini ochib bo‘lmadi. Birozdan keyin qayta urinib ko‘ring.",
+    pay_created: (m: number) => `🆕 Buyurtma yaratildi. ${m} daqiqa ichida to‘lang, aks holda bron bekor qilinadi. Olish kodi to‘lovdan keyin keladi.`,
     place: "✅ Band qilish", edit_phone: "✏️ Telefon", edit_name: "✏️ Ism", edit_comment: "💬 Izoh", edit_time: "🕒 Vaqt",
     ask_name: "Ismingizni yozing:", ask_comment: "Izohni yozing (300 belgigacha):", cancel_input: "← Bekor qilish", too_long: "Juda uzun. Qisqaroq yozing.",
     created: "🆕 Buyurtma qabul qilindi! Mahsulot siz uchun band qilindi.",
@@ -156,6 +161,8 @@ const T = {
     confirm: "<b>Проверьте заказ</b>", pickup: "Получение", hold: "Бронь держится до", name: "Имя", phone: "Телефон", comment: "Комментарий", point: "Точка",
     pay: "Оплата: при получении", pay_note: "Предоплата не нужна.",
     consent: "Нажимая кнопку, вы соглашаетесь на обработку номера телефона для выполнения заказа.",
+    pay_with: (p: string) => `💳 Оплатить через ${p}`, pay_btn: "💳 Оплатить", pay_online: "Оплата", pay_fail: "Не удалось открыть оплату. Попробуйте чуть позже.",
+    pay_created: (m: number) => `🆕 Заказ создан. Оплатите в течение ${m} минут, иначе бронь снимется. Код получения придёт после оплаты.`,
     place: "✅ Забронировать", edit_phone: "✏️ Телефон", edit_name: "✏️ Имя", edit_comment: "💬 Комментарий", edit_time: "🕒 Время",
     ask_name: "Напишите ваше имя:", ask_comment: "Напишите комментарий (до 300 символов):", cancel_input: "← Отмена", too_long: "Слишком длинно. Напишите короче.",
     created: "🆕 Заказ принят! Товар зарезервирован за вами.",
@@ -200,6 +207,8 @@ const T = {
     confirm: "<b>Check your order</b>", pickup: "Pickup", hold: "Reserved until", name: "Name", phone: "Phone", comment: "Comment", point: "Location",
     pay: "Payment: on pickup", pay_note: "No prepayment needed.",
     consent: "By pressing the button you agree to the processing of your phone number to fulfil the order.",
+    pay_with: (p: string) => `💳 Pay with ${p}`, pay_btn: "💳 Pay", pay_online: "Payment", pay_fail: "Couldn’t open the payment page. Please try again shortly.",
+    pay_created: (m: number) => `🆕 Order created. Pay within ${m} minutes, otherwise the reservation will be released. Your pickup code will arrive after payment.`,
     place: "✅ Reserve", edit_phone: "✏️ Phone", edit_name: "✏️ Name", edit_comment: "💬 Comment", edit_time: "🕒 Time",
     ask_name: "Type your name:", ask_comment: "Type a comment (up to 300 characters):", cancel_input: "← Cancel", too_long: "Too long. Please shorten it.",
     created: "🆕 Order received! Your items are reserved.",
@@ -292,7 +301,7 @@ interface Batch { batch_id: string; produced_at: string; sell_until: string; ava
 interface Product { product_id: string; price: number; size_label: string; image_url: string | null; batches: Batch[]; [k: string]: unknown }
 interface Point { code: string; name: string; open_time: string; close_time: string; [k: string]: unknown }
 interface Order {
-  number: number; token: string; pickup_code: string; status: string; payment_status: string;
+  number: number; token: string; pickup_code: string; status: string; payment_status: string; payment_method: string;
   total: number; pickup_date: string; pickup_slot: string; reserved_until: string;
   fridge: { code: string; name: string; [k: string]: unknown };
   items: { product_id: string; size_label: string; qty: number; price: number; [k: string]: unknown }[];
@@ -344,16 +353,18 @@ function orderCard(o: Order, l: Lang) {
     `📍 ${t.point} ${esc(o.fridge.name)}, ${esc(pick(o.fridge, "address", l))}`,
     `🕒 ${t.pickup}: ${day(o.pickup_date, l)}, ${esc(o.pickup_slot.replace("-", "–"))}`,
   ];
-  if (active) lines.push(`🔑 ${t.code}: <b>${esc(o.pickup_code)}</b>`);
+  // До онлайн-оплаты кода нет: выдать такой заказ всё равно нельзя
+  if (o.status === "confirmed") lines.push(`🔑 ${t.code}: <b>${esc(o.pickup_code)}</b>`);
   lines.push("");
   for (const i of o.items) lines.push(`• ${esc(pick(i, "name", l))} ${esc(sizeLabel(i.size_label, l))} × ${i.qty} — ${money(i.price * i.qty, l)}`);
   lines.push(`💰 ${t.total}: <b>${money(o.total, l)}</b>`);
-  if (active && o.payment_status !== "paid") lines.push(t.pay);
+  if (active && o.payment_status !== "paid") lines.push(o.payment_method === "on_pickup" ? t.pay : `${t.pay_online}: ${o.payment_method === "click" ? "Click" : "Payme"}`);
   return lines.join("\n");
 }
 function orderButtons(c: Cfg, o: Order, l: Lang): Button[][] {
   const t = T[l];
   const rows: Button[][] = [webApp(t.open_order, `${c.site_url}/${l}/order/${o.token}`)];
+  if (o.status === "pending_payment") rows.unshift([cb(t.pay_btn, `pay:${o.token}`)]);
   if ((o.status === "confirmed" || o.status === "pending_payment") && o.payment_status !== "paid") rows.push([cb(t.cancel, `cx:${o.token}`)]);
   if (o.status !== "confirmed" && o.status !== "pending_payment") rows.push([cb(t.repeat, `rp:${o.token}`)]);
   return rows;
@@ -633,13 +644,30 @@ async function showConfirm(x: Ctx, notice?: string) {
   );
   return show(x, lines.join("\n"), [
     [cb(`${t.place} · ${money(total, x.l)}`, "place")],
+    ...(x.c.payme_enabled ? [[cb(t.pay_with("Payme"), "place:payme")]] : []),
+    ...(x.c.click_enabled ? [[cb(t.pay_with("Click"), "place:click")]] : []),
     [cb(t.edit_time, "when"), cb(t.edit_phone, "e:phone")],
     [cb(t.edit_name, "e:name"), cb(t.edit_comment, "e:comment")],
     [cb(t.back, "cart")],
   ]);
 }
 
-async function placeOrder(x: Ctx) {
+/** Ссылка на Payme или Click от функции payments */
+async function paymentLink(token: string, l: Lang): Promise<string | null> {
+  try {
+    const r = await fetch(`${SB_URL}/functions/v1/payments/link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, lang: l }),
+    });
+    const res = await r.json();
+    return res.ok && typeof res.url === "string" ? res.url : null;
+  } catch {
+    return null;
+  }
+}
+
+async function placeOrder(x: Ctx, method: "on_pickup" | "payme" | "click" = "on_pickup") {
   const t = T[x.l];
   const s = x.u.state;
   if (!s.point || !s.cart?.length) return showHome(x);
@@ -655,6 +683,7 @@ async function placeOrder(x: Ctx) {
     p_pickup_date: ymd,
     p_pickup_slot: s.slot,
     p_comment: s.comment ?? null,
+    p_method: method,
   });
   if (error) {
     if (/DUPLICATE_ORDER/.test(error.message)) return; // второе нажатие той же кнопки: заказ уже создан
@@ -676,6 +705,12 @@ async function placeOrder(x: Ctx) {
   x.u.state = { point: s.point };
   await save(x.chatId, { state: x.u.state });
   const o = data as Order;
+  if (method !== "on_pickup") {
+    const url = await paymentLink(o.token, x.l);
+    const rows = orderButtons(x.c, o, x.l);
+    if (url) rows[0] = [{ text: t.pay_btn, url }]; // первая строка — кнопка оплаты: сразу открываем форму
+    return show(x, `${t.pay_created(x.c.payment_hold_minutes)}${url ? "" : `\n\n${t.pay_fail}`}\n\n${orderCard(o, x.l)}`, rows);
+  }
   return show(x, `${t.created}\n\n${orderCard(o, x.l)}`, [...orderButtons(x.c, o, x.l), [cb(t.home, "home")]]);
 }
 
@@ -814,7 +849,24 @@ async function route(x: Ctx, d: string) {
   if (d === "checkout") return showCheckout(x);
   if (d === "when") return showWhen(x);
   if (d === "place") return placeOrder(x);
+  if (d === "place:payme" && x.c.payme_enabled) return placeOrder(x, "payme");
+  if (d === "place:click" && x.c.click_enabled) return placeOrder(x, "click");
   if (d === "confirm") return showConfirm(x);
+  if (d.startsWith("pay:")) {
+    // Только свой заказ: чужой токен в кнопку подставить нельзя
+    const { data } = await db.rpc("shop_order", { p_chat_id: x.chatId, p_token: d.slice(4) });
+    if (!data) return;
+    const o = data as Order;
+    if (o.status !== "pending_payment") return show(x, orderCard(o, x.l), orderButtons(x.c, o, x.l));
+    const url = await paymentLink(o.token, x.l);
+    if (!url) {
+      x.toast = t.pay_fail;
+      return;
+    }
+    const rows = orderButtons(x.c, o, x.l);
+    rows[0] = [{ text: t.pay_btn, url }];
+    return show(x, orderCard(o, x.l), rows);
+  }
   if (d === "lang") {
     return show(x, t.choose_lang, [[cb("🇺🇿 O‘zbekcha", "setlang:uz"), cb("🇷🇺 Русский", "setlang:ru"), cb("🇬🇧 English", "setlang:en")]]);
   }

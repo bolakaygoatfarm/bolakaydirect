@@ -8,6 +8,7 @@ import { addDays, formatPhoneInput, money, normalizePhone, pick, pickupSlots, sh
 import { errorText, t } from "@/lib/i18n";
 import { browserClient } from "@/lib/supabase";
 import { linkOrderToBot } from "@/lib/telegram-webapp";
+import { paymentUrl } from "@/lib/payment";
 import { groupCatalog, type CatalogRow, type Fridge, type Lang, type PaymentMethod } from "@/lib/types";
 import { ProductArt } from "./ProductArt";
 import { Stepper } from "./PointCatalog";
@@ -125,7 +126,10 @@ export function Checkout({ lang }: { lang: Lang }) {
     rememberOrder(token);
     await linkOrderToBot(token);
     clear();
-    router.replace(`/${lang}/order/${token}`);
+    // Онлайн-оплата: сразу на форму Payme или Click. Без ссылки на странице заказа останется кнопка «Оплатить»
+    const payUrl = method === "on_pickup" ? null : await paymentUrl(token, lang);
+    if (payUrl) window.location.assign(payUrl);
+    else router.replace(`/${lang}/order/${token}`);
   }
 
   if (!code) return <Empty lang={lang} text={d.cart_empty} />;
@@ -245,9 +249,9 @@ export function Checkout({ lang }: { lang: Lang }) {
       {err && <p className="mt-4 rounded-xl bg-danger-50 p-3 text-sm font-bold text-danger" role="alert">{err}</p>}
 
       <button className="btn btn-primary mt-6 w-full text-base" disabled={sending || !consent || !slot}>
-        {sending ? d.placing : `${d.place_order} · ${money(total, lang)}`}
+        {sending ? d.placing : `${method === "on_pickup" ? d.place_order : d.pay_now} · ${money(total, lang)}`}
       </button>
-      {method === "on_pickup" && <p className="mt-2 text-center text-xs font-semibold text-muted">{d.pay_note}</p>}
+      <p className="mt-2 text-center text-xs font-semibold text-muted">{method === "on_pickup" ? d.pay_note : d.pay_online_note}</p>
     </form>
   );
 }

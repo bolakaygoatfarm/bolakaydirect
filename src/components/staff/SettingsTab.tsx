@@ -6,6 +6,7 @@ import type { Me } from "./StaffApp";
 import { ErrorNote, Field, Section, staffError } from "./ui";
 import { TelegramSettings } from "./TelegramSettings";
 import { ShopBotSettings } from "./ShopBotSettings";
+import { PaymentSettings } from "./PaymentSettings";
 import { s } from "./i18n";
 
 interface S { payment_hold_minutes: number; pickup_grace_minutes: number; support_phone: string | null; click_enabled: boolean; payme_enabled: boolean }
@@ -63,10 +64,6 @@ export function SettingsTab({ me }: { me: Me }) {
           <Field label={s("Резерв до онлайн-оплаты, мин")}><input className="field" type="number" min={3} max={60} value={st.payment_hold_minutes} onChange={(e) => setS({ ...st, payment_hold_minutes: Number(e.target.value) })} /></Field>
           <Field label={s("Ожидание после интервала выдачи, мин")}><input className="field" type="number" min={0} max={600} value={st.pickup_grace_minutes} onChange={(e) => setS({ ...st, pickup_grace_minutes: Number(e.target.value) })} /></Field>
           <Field label={s("Телефон поддержки")}><input className="field" value={st.support_phone ?? ""} onChange={(e) => setS({ ...st, support_phone: e.target.value })} /></Field>
-          <div className="rounded-xl bg-brand-50 p-3 text-sm">
-            <p className="font-bold">{s("Онлайн-оплата")}</p>
-            <p className="mt-1 text-muted">Click: {st.click_enabled ? s("включён") : s("не подключён")} · Payme: {st.payme_enabled ? s("включён") : s("не подключён")}. {s("Включается после заключения договора с провайдером и настройки ключей на сервере.")}</p>
-          </div>
           <div className="sm:col-span-2 flex items-center gap-3">
             <button className="btn btn-primary">{s("Сохранить")}</button>
             {msg && <span className="text-sm font-bold text-fresh">{msg}</span>}
@@ -74,6 +71,7 @@ export function SettingsTab({ me }: { me: Me }) {
         </form>
       </Section>
 
+      <PaymentSettings flags={{ click_enabled: st.click_enabled, payme_enabled: st.payme_enabled }} onChange={(f) => setS({ ...st, ...f })} />
       <TelegramSettings />
       <ShopBotSettings />
 

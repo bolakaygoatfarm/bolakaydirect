@@ -27,6 +27,9 @@ export interface Product {
   net_unit: "ml" | "g" | null;
   price: number;
   sell_days: number;
+  mxik_code?: string | null;
+  package_code?: string | null;
+  vat_percent?: number;
   image_url: string | null;
   is_active: boolean;
   sort: number;

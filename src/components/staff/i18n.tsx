@@ -313,6 +313,22 @@ const DICT: Record<string, [string, string]> = {
   "Или отправьте боту команду `/admin {0}`. Код действует 15 минут.": ["Yoki botga `/admin {0}` buyrug‘ini yuboring. Kod 15 daqiqa amal qiladi.", "Or send the bot the command `/admin {0}`. The code is valid for 15 minutes."],
   "Получить код подключения": ["Ulanish kodini olish", "Get a connection code"],
 
+  // Онлайн-оплата
+  "Не удалось получить настройки оплаты.": ["To‘lov sozlamalarini olib bo‘lmadi.", "Couldn’t load the payment settings."],
+  "Ключи добавлены": ["Kalitlar qo‘shilgan", "Keys added"],
+  "Ключи не добавлены": ["Kalitlar qo‘shilmagan", "Keys not added"],
+  "Включён на сайте": ["Saytda yoqilgan", "On for the site"],
+  "Выключен на сайте": ["Saytda o‘chirilgan", "Off for the site"],
+  "Включить на сайте": ["Saytda yoqish", "Turn on for the site"],
+  "Выключить на сайте": ["Saytda o‘chirish", "Turn off for the site"],
+  "Секреты в Supabase → Edge Functions → Secrets: {0}": ["Supabase → Edge Functions → Secrets dagi sirlar: {0}", "Secrets in Supabase → Edge Functions → Secrets: {0}"],
+  "Поле счёта": ["Hisob maydoni", "Account field"],
+  "Тестовый режим: настоящие деньги не списываются. Перед запуском удалите секрет PAYME_TEST_MODE.": ["Sinov rejimi: haqiqiy pul yechilmaydi. Ishga tushirishdan oldin PAYME_TEST_MODE sirini o‘chiring.", "Test mode: no real money is charged. Delete the PAYME_TEST_MODE secret before launch."],
+  "Деньги при отмене оплаченного заказа возвращаются вручную в кабинете Payme или Click. Отметка в этой панели сама деньги не возвращает.": ["To‘langan buyurtma bekor qilinganda pul Payme yoki Click kabinetida qo‘lda qaytariladi. Bu paneldagi belgi pulni o‘zi qaytarmaydi.", "When a paid order is cancelled, refund the money manually in the Payme or Click cabinet. The mark in this panel doesn’t return the money by itself."],
+  "ИКПУ (для чека Payme)": ["MXIK (Payme cheki uchun)", "MXIK code (for the Payme receipt)"],
+  "Код упаковки": ["Qadoq kodi", "Package code"],
+  "НДС, %": ["QQS, %", "VAT, %"],
+
   // Бот для заказов
   "Бот для заказов": ["Buyurtmalar boti", "Ordering bot"],
   "Токен не задан. Добавьте секрет TELEGRAM_SHOP_BOT_TOKEN в Supabase → Edge Functions → Secrets (шаг 2 ниже).": ["Token berilmagan. TELEGRAM_SHOP_BOT_TOKEN sirini Supabase → Edge Functions → Secrets ga qo‘shing (quyidagi 2-qadam).", "The token is not set. Add the TELEGRAM_SHOP_BOT_TOKEN secret in Supabase → Edge Functions → Secrets (step 2 below)."],

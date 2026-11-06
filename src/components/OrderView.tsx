@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { rememberOrder } from "@/lib/cart";
 import { addDays, dateTime, formatPhone, money, pick, realPhone, shortDate, sizeLabel, tashkentDate, tashkentTime } from "@/lib/format";
 import { errorText, t } from "@/lib/i18n";
+import { paymentUrl } from "@/lib/payment";
 import { browserClient } from "@/lib/supabase";
 import type { Lang, OrderStatus, PublicOrder } from "@/lib/types";
 import { mapUrlClient } from "./mapUrl";
@@ -27,6 +28,8 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [now, setNow] = useState(0); // время последней проверки статуса
+  const [paying, setPaying] = useState(false);
+  const pendingPay = order?.status === "pending_payment";
 
   const load = useCallback(async () => {
     const { data, error } = await browserClient().rpc("get_order", { p_token: token });
@@ -47,10 +50,10 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
     rememberOrder(token);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
-    // обновляем статус каждые 20 секунд, пока страница открыта
-    const id = setInterval(() => document.visibilityState === "visible" && load(), 20000);
+    // обновляем статус, пока страница открыта: после возврата с оплаты подтверждение должно появиться быстро
+    const id = setInterval(() => document.visibilityState === "visible" && load(), pendingPay ? 4000 : 20000);
     return () => clearInterval(id);
-  }, [load, token]);
+  }, [load, token, pendingPay]);
 
   // Ссылка — единственный ключ к заказу с другого устройства: на телефоне открываем «Поделиться», иначе копируем
   async function saveLink() {
@@ -85,10 +88,21 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
     else setOrder(data as PublicOrder);
   }
 
+  async function pay() {
+    setPaying(true);
+    setErr(null);
+    const url = await paymentUrl(token, lang);
+    if (url) return window.location.assign(url);
+    setPaying(false);
+    setErr(d.pay_link_error);
+    void load();
+  }
+
   if (order === undefined) return <p className="mx-auto max-w-lg px-4 py-10 text-muted">{err ?? loadingText}</p>;
   if (order === null) return <p className="mx-auto max-w-lg px-4 py-16 text-center text-lg font-bold">404</p>;
 
   const active = order.status === "confirmed" || order.status === "pending_payment";
+  const waitingPay = order.status === "pending_payment";
   const map = mapUrlClient(order.fridge);
 
   // Забронировано ≠ готово к выдаче: «Можно забирать» появляется только с начала выбранного интервала
@@ -114,7 +128,17 @@ export function OrderView({ lang, token, loadingText }: { lang: Lang; token: str
         </p>
       )}
 
-      {active && (
+      {waitingPay && (
+        <section className="card mt-5 grid gap-3 p-5 text-center">
+          <p className="text-sm font-bold text-ink">{d.pay_until.replace("{time}", tashkentTime(new Date(order.reserved_until)))}</p>
+          <button type="button" onClick={pay} disabled={paying} className="btn btn-primary w-full text-base">
+            {paying ? d.placing : `${d.pay_now} · ${money(order.total, lang)}`}
+          </button>
+          <p className="text-xs font-semibold text-muted">{d.pay_wait_note}</p>
+        </section>
+      )}
+
+      {order.status === "confirmed" && (
         <section className="grain relative mt-5 overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-6 text-center text-white shadow-[var(--shadow-float)]">
           <p className="text-sm font-bold uppercase tracking-widest text-white/75">{d.pickup_code}</p>
           <PickupCode code={order.pickup_code} lang={lang} />

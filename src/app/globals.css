@@ -241,10 +241,15 @@ body {
 .hero-panel p { text-shadow: 0 1px 10px rgb(10 39 71 / 0.55); }
 .hero-panel { height: 100svh; min-height: 640px; isolation: isolate; background: radial-gradient(60rem 36rem at 75% 20%, #0a7bbf 0%, transparent 70%), linear-gradient(160deg, #0a2747 0%, #0b3f6b 60%, #075f97 100%); }
 /* screen убирает чёрный фон видео: на синем остаётся только белая струя */
-/* Телефон: молоко падает с самого верха экрана. Текст лежит поверх струи, поэтому за ним молоко
-   полупрозрачное (маска), а ниже кнопок становится полностью белым. Фон при этом не темнеет: чёрное в видео и так невидимо */
-.hero-video { position: absolute; left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100%; object-fit: cover; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.26) 34rem, #000 41rem); mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.26) 34rem, #000 41rem); }
-@media (max-width: 767.98px) { .hero-panel h1 { text-shadow: 0 2px 14px rgb(10 39 71 / 0.5); } }
+/* Телефон: молоко падает с самого верха экрана. Текст лежит поверх струи: за ним молоко приглушено маской,
+   а фон темнее, чем на компьютере, поэтому струя хорошо видна на нём и не спорит с белым текстом. С уровня кнопок молоко полностью белое */
+.hero-video { position: absolute; left: 0; right: 0; top: 0; bottom: 0; width: 100%; height: 100%; object-fit: cover; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.46) 27rem, #000 31rem); mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.46) 27rem, #000 31rem); }
+@media (max-width: 767.98px) {
+  .hero-panel { background: linear-gradient(180deg, #071c34 0%, #0a2747 55%, #0b3f6b 100%); }
+  .hero-panel h1 { text-shadow: 0 2px 16px rgb(7 28 52 / 0.75); }
+  .hero-panel p { text-shadow: 0 1px 10px rgb(7 28 52 / 0.9), 0 0 2px rgb(7 28 52 / 0.6); }
+  .hero-panel a.btn:not(.btn-butter) { background-color: rgb(10 39 71 / 0.85); }
+}
 @media (min-width: 768px) { .hero-video { left: 22%; right: auto; -webkit-mask-image: none; mask-image: none; } }
 
 /* Тёплая кнопка */
