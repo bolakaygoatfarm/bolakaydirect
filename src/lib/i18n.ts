@@ -1,5 +1,7 @@
 import type { Lang } from "./types";
 
+export type HeroTarget = "catalog" | "points" | "how";
+
 const uz = {
   brand: "BOLAKAY",
   tagline: "Echki fermasidan to‘g‘ridan-to‘g‘ri",
@@ -11,6 +13,9 @@ const uz = {
     "BOLAKAY o‘z fermasida echki suti, yogurt, sariyog‘ va sutli ichimliklar tayyorlaydi. Har bir mahsulotda ishlab chiqarilgan sana va yaroqlilik muddati ko‘rsatiladi.",
   hero_cta: "Yaqin nuqtani tanlash",
   hero_cta2: "Qanday ishlaydi",
+  // Куда ведут кнопки первого экрана: catalog — ассортимент ниже, points — список точек, how — «Как это работает»
+  hero_cta_to: "points" as HeroTarget,
+  hero_cta2_to: "how" as HeroTarget,
   how_title: "Qanday ishlaydi",
   how_1_t: "QR-kodni skanerlang",
   how_1_d: "BOLAKAY sovutgichidagi QR-kod sizni aynan shu nuqtaning vitrinasiga olib boradi.",
@@ -215,11 +220,14 @@ const ru: Dict = {
   nav_points: "Точки",
   nav_orders: "Мои заказы",
   nav_about: "О ферме",
-  hero_title: "Козье молоко — от фермы до холодильника за один день",
+  // Перевод строки — обязательный перенос, [слово] — под жёлтым маркером
+  hero_title: "Козье молоко.\n[Ближе], чем когда-либо.",
   hero_text:
-    "BOLAKAY производит на собственной ферме козье молоко, йогурт, масло и молочные напитки. На каждом товаре — дата производства и срок годности.",
-  hero_cta: "Выбрать ближайшую точку",
-  hero_cta2: "Как это работает",
+    "Молоко, йогурт и нежное масло с нашей фермы — для вашего стола. Выберите любимое и заберите в ближайшей точке BOLAKAY.",
+  hero_cta: "Выбрать продукты",
+  hero_cta2: "Найти точку рядом",
+  hero_cta_to: "catalog",
+  hero_cta2_to: "points",
   how_title: "Как это работает",
   how_1_t: "Сканируйте QR-код",
   how_1_d: "QR-код на холодильнике BOLAKAY откроет витрину именно этой точки.",
@@ -427,6 +435,8 @@ const en: Dict = {
     "BOLAKAY makes goat milk, yogurt, butter and milk drinks on its own farm. Every item shows its production date and shelf life.",
   hero_cta: "Find the nearest location",
   hero_cta2: "How it works",
+  hero_cta_to: "points",
+  hero_cta2_to: "how",
   how_title: "How it works",
   how_1_t: "Scan the QR code",
   how_1_d: "The QR code on a BOLAKAY fridge opens the shop of that exact location.",

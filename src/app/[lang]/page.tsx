@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProducts } from "@/lib/data";
-import { t } from "@/lib/i18n";
+import { t, type HeroTarget } from "@/lib/i18n";
 import { isLang } from "@/lib/types";
 import { HeroScrub } from "@/components/HeroScrub";
 import { ProductCarousel } from "@/components/ProductCarousel";
@@ -18,10 +18,26 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
   if (!isLang(lang)) notFound();
   const d = t(lang);
   const products = await getProducts();
-  // Два последних слова заголовка — под тёплым маркером («один день» / «bir kun»)
-  const words = d.hero_title.split(" ");
-  const titleHead = words.slice(0, -2).join(" ");
-  const titleTail = words.slice(-2).join(" ");
+  const heroHref = (to: HeroTarget) => (to === "points" ? `/${lang}/points` : `#${to}`);
+  // Заголовок с разметкой: "\n" — перенос строки, [текст] — под тёплым маркером.
+  // Без разметки (uz/en пока) маркер получают два последних слова («bir kun» / «one day»).
+  const title = d.hero_title.includes("[")
+    ? d.hero_title
+    : d.hero_title.replace(/(\S+ \S+)$/, "[$1]");
+  const titleLines = title.split("\n").map((line, i) => (
+    <span key={i} className="block">
+      {line.split(/(\[[^\]]+\])/).map((part, j) =>
+        part.startsWith("[") ? (
+          <span key={j} className="hl hl--thin">{part.slice(1, -1)}</span>
+        ) : (
+          // Слова через дефис («когда-либо») не рвём на узком экране
+          part.split(/(\S+-\S+)/).map((w, k) =>
+            k % 2 ? <span key={`${j}-${k}`} className="whitespace-nowrap">{w}</span> : w,
+          )
+        ),
+      )}
+    </span>
+  ));
 
   return (
     <>
@@ -31,21 +47,23 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
           <span className="eyebrow">
             <span className="h-2 w-2 rounded-full bg-fresh" /> BOLAKAY DIRECT · Toshkent
           </span>
-          <h1 className="font-display mt-5 text-[2.35rem] font-bold leading-[1.06] text-white sm:text-[3.4rem]">
-            {titleHead} <span className="hl hl--thin">{titleTail}</span>
+          <h1 className="font-display mt-5 text-[clamp(2.1rem,9vw,2.6rem)] font-bold leading-[1.08] text-white [overflow-wrap:break-word] sm:text-[3.4rem] md:text-[3.6rem]">
+            {titleLines}
           </h1>
           <p className="mt-5 max-w-lg text-[1.05rem] leading-relaxed text-white/85">{d.hero_text}</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href={`/${lang}/points`} className="btn btn-butter px-6">
+            <Link href={heroHref(d.hero_cta_to)} className="btn btn-butter px-6">
               {d.hero_cta} <Arrow />
             </Link>
-            <a href="#how" className="btn border border-white/40 bg-[#0a2747]/55 text-white hover:bg-[#0a2747]/75">{d.hero_cta2}</a>
+            <Link href={heroHref(d.hero_cta2_to)} className="btn border border-white/40 bg-[#0a2747]/55 text-white hover:bg-[#0a2747]/75">
+              {d.hero_cta2}
+            </Link>
           </div>
         </div>
       </HeroScrub>
 
       {/* АССОРТИМЕНТ */}
-      <section className="relative overflow-hidden">
+      <section id="catalog" className="relative scroll-mt-20 overflow-hidden">
         <MilkBackdrop />
         <div className="relative mx-auto max-w-5xl px-4 pt-8">
           <H2 className="mt-0">{d.catalog_title}</H2>
