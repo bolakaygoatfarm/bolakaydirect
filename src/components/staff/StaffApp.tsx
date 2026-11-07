@@ -16,7 +16,7 @@ import { ReportsTab } from "./ReportsTab";
 import { SettingsTab } from "./SettingsTab";
 import { STAFF_LANG_KEY, STAFF_LANGS, s, setStaffLang, type StaffLang } from "./i18n";
 import { ThemeToggle } from "../ThemeToggle";
-import { MfaScreen, useMfa } from "./MfaScreen";
+import { EmailCodeScreen, useStaffCode } from "./EmailCodeScreen";
 
 export interface Me { user_id: string; full_name: string; role: "admin" | "operator" | "courier" }
 
@@ -57,9 +57,8 @@ export function StaffApp() {
     return () => data.subscription.unsubscribe();
   }, [sb]);
   const recovery = useRecovery();
-  const mfa = useMfa(session);
-  // После ввода кода сессия обновляется сама; это на случай, если событие уже прошло
-  const refreshSession = () => sb.auth.getSession().then(({ data }) => setSession(data.session));
+  const { code, pass } = useStaffCode(session);
+  const codeVerified = !!code?.verified;
 
   useEffect(() => {
     if (!session) return;
@@ -78,7 +77,8 @@ export function StaffApp() {
       setFridgeId(list.find((x) => x.id === saved)?.id ?? list[0]?.id ?? "");
     })();
     return () => { alive = false; };
-  }, [session, sb]);
+    // После кода данные загружаются заново: до него база отдаёт только публичное
+  }, [session, sb, codeVerified]);
 
   const reloadFridges = async () => {
     const { data } = await sb.from("fridges").select("*").order("sort").order("code");
@@ -87,21 +87,7 @@ export function StaffApp() {
 
   if (session === undefined) return <Center>{s("Загрузка…")}</Center>;
   // Пришли по ссылке из письма — сначала новый пароль, потом панель
-  const mfaFailed = (
-    <Center>
-      <p className="font-bold">{s("Не удалось проверить вход. Проверьте интернет и попробуйте снова.")}</p>
-      <button className="btn btn-primary mt-5" onClick={() => window.location.reload()}>{s("Попробовать ещё раз")}</button>
-      <button className="btn btn-ghost mt-2" onClick={() => sb.auth.signOut()}>{s("Выйти")}</button>
-    </Center>
-  );
-  if (session && recovery) {
-    if (mfa === undefined) return <Center>{s("Загрузка…")}</Center>;
-    if (mfa.failed) return mfaFailed;
-    // Если код уже настроен, Supabase не даст сменить пароль без него
-    if (mfa.factorId && mfa.level !== "aal2")
-      return <AuthShell lang={lang} onLang={changeLang}><MfaScreen factorId={mfa.factorId} onDone={refreshSession} /></AuthShell>;
-    return <NewPassword lang={lang} onLang={changeLang} onDone={() => setRecovery(false)} />;
-  }
+  if (session && recovery) return <NewPassword lang={lang} onLang={changeLang} onDone={() => setRecovery(false)} />;
   if (!session) return <Login lang={lang} onLang={changeLang} />;
   if (me === undefined) return <Center>{s("Загрузка…")}</Center>;
   if (me === null)
@@ -112,11 +98,18 @@ export function StaffApp() {
         <button className="btn btn-ghost mt-5" onClick={() => sb.auth.signOut()}>{s("Выйти")}</button>
       </Center>
     );
-  if (mfa === undefined) return <Center>{s("Загрузка…")}</Center>;
-  if (mfa.failed) return mfaFailed;
-  // Панель открывается только после кода из приложения
-  if (mfa.level !== "aal2")
-    return <AuthShell lang={lang} onLang={changeLang}><MfaScreen factorId={mfa.factorId} onDone={refreshSession} /></AuthShell>;
+  if (code === undefined) return <Center>{s("Загрузка…")}</Center>;
+  if (code.failed)
+    return (
+      <Center>
+        <p className="font-bold">{s("Не удалось проверить вход. Проверьте интернет и попробуйте снова.")}</p>
+        <button className="btn btn-primary mt-5" onClick={() => window.location.reload()}>{s("Попробовать ещё раз")}</button>
+        <button className="btn btn-ghost mt-2" onClick={() => sb.auth.signOut()}>{s("Выйти")}</button>
+      </Center>
+    );
+  // Панель открывается только после кода из письма
+  if (!code.verified)
+    return <AuthShell lang={lang} onLang={changeLang}><EmailCodeScreen email={session.user.email ?? ""} onDone={pass} /></AuthShell>;
 
   const tabs = TABS.filter((t) => (t.roles as readonly string[]).includes(me.role));
   const fridge = fridges.find((f) => f.id === fridgeId) ?? null;
@@ -134,6 +127,10 @@ export function StaffApp() {
           <button className="btn btn-ghost min-h-9 px-3 text-xs" onClick={() => sb.auth.signOut()}>{s("Выйти")}</button>
         </div>
       </header>
+
+      {code.skipped && me.role === "admin" && (
+        <p className="mb-3 rounded-xl bg-aged-50 p-3 text-sm font-bold text-aged">{s("Код на почту ещё не включён: вход защищён только паролем. Добавьте секреты BREVO_API_KEY и BREVO_SENDER_EMAIL в Supabase.")}</p>
+      )}
 
       <nav className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
         {tabs.map((t) => (

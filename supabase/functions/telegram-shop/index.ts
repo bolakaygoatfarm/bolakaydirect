@@ -1113,10 +1113,12 @@ async function handleLink(req: Request) {
 }
 
 // ---------- подключение бота из админ-панели ----------
-/** Вход подтверждён 6-значным кодом. Подпись токена уже проверил getUser */
-function codeConfirmed(jwt: string) {
+/** Вход подтверждён кодом из письма. Подпись токена уже проверил getUser */
+async function codeConfirmed(jwt: string, userId: string) {
   try {
-    return JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).aal === "aal2";
+    const session = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).session_id;
+    const { data } = await db.rpc("staff_session_ok", { p_session: session, p_user: userId });
+    return data === true;
   } catch {
     return false;
   }
@@ -1127,7 +1129,7 @@ async function handleSetup(req: Request) {
   const { data: u } = await db.auth.getUser(jwt);
   if (!u?.user) return json({ ok: false, error: "UNAUTHORIZED" }, 401);
   const { data: staff } = await db.from("staff").select("role,is_active").eq("user_id", u.user.id).maybeSingle();
-  if (!staff || staff.role !== "admin" || !staff.is_active || !codeConfirmed(jwt)) return json({ ok: false, error: "FORBIDDEN" }, 403);
+  if (!staff || staff.role !== "admin" || !staff.is_active || !(await codeConfirmed(jwt, u.user.id))) return json({ ok: false, error: "FORBIDDEN" }, 403);
   if (!TOKEN) return json({ ok: false, error: "NO_TOKEN" }, 400);
 
   const body = await req.json().catch(() => ({}));

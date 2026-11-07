@@ -22,9 +22,11 @@ Deno.serve(createHandler({
     if (!u?.user) return false;
     const { data: staff } = await db.from("staff").select("role,is_active").eq("user_id", u.user.id).maybeSingle();
     if (!staff || staff.role !== "admin" || !staff.is_active) return false;
-    // Вход должен быть подтверждён 6-значным кодом. Подпись токена уже проверил getUser
+    // Вход должен быть подтверждён кодом из письма. Подпись токена уже проверил getUser
     try {
-      return JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).aal === "aal2";
+      const session = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).session_id;
+      const { data } = await db.rpc("staff_session_ok", { p_session: session, p_user: u.user.id });
+      return data === true;
     } catch {
       return false;
     }
