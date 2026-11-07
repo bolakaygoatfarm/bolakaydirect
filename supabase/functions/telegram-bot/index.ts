@@ -6,6 +6,7 @@
 //
 // Секрет TELEGRAM_BOT_TOKEN задаётся в Supabase → Edge Functions → Secrets.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ADMIN_KEYBOARD, cancelNotice, isFilter, listView, OPEN_LIST, ORDERS_BTN, orderView } from "./admin.ts";
 
 type Lang = "uz" | "ru";
 
@@ -247,9 +248,41 @@ async function onRepeat(c: Cfg, chatId: number, lang: Lang, token: string) {
 async function onAdminBind(msg: TgMessage, code: string) {
   const ok = (await db.rpc("tg_bind_admin", { p_code: code.trim(), p_chat_id: msg.chat.id })).data === true;
   cfgCache = null;
-  return send(msg.chat.id, ok
-    ? "✅ Этот чат подключён как чат администратора BOLAKAY: сюда будут приходить новые заказы и обращения покупателей. Чтобы ответить покупателю, ответьте (Reply) на его сообщение."
-    : "Код неверный или устарел. Получите новый код в панели: Настройки → Telegram.");
+  if (ok) return showAdminPanel(msg.chat.id, "✅ Этот чат подключён как чат администратора BOLAKAY: сюда будут приходить новые заказы, отмены и обращения покупателей. Чтобы ответить покупателю, ответьте (Reply) на его сообщение.");
+  return send(msg.chat.id, "Код неверный или устарел. Получите новый код в панели: Настройки → Telegram.");
+}
+
+// ---------- чат администратора: список заказов ----------
+/** Постоянная кнопка под полем ввода и сразу список */
+async function showAdminPanel(chatId: number, text: string) {
+  await tg("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", reply_markup: ADMIN_KEYBOARD });
+  return showAdminList(chatId, "all", 0);
+}
+
+async function adminShow(chatId: number, messageId: number | undefined, view: { text: string; rows: Button[][] }) {
+  if (messageId) {
+    const r = await tg("editMessageText", { chat_id: chatId, message_id: messageId, text: view.text, parse_mode: "HTML", reply_markup: { inline_keyboard: view.rows } });
+    // Нажали «Обновить», а заказы не менялись: это не ошибка
+    if (r.ok || /message is not modified/.test(r.description ?? "")) return r;
+  }
+  return send(chatId, view.text, view.rows);
+}
+
+async function showAdminList(chatId: number, filter: string, page: number, messageId?: number) {
+  const { data, error } = await db.rpc("tg_admin_orders", { p_filter: filter, p_page: page });
+  if (error || !data) return send(chatId, "Не удалось загрузить заказы. Попробуйте ещё раз.");
+  return adminShow(chatId, messageId, listView(data, filter, page));
+}
+
+async function onAdminCallback(chatId: number, messageId: number | undefined, d: string) {
+  const [, kind, a, b, c] = d.split(":");
+  if (kind === "l" && isFilter(a)) return showAdminList(chatId, a, Math.max(0, Number(b) || 0), messageId);
+  if (kind === "o" && /^\d{1,18}$/.test(a)) {
+    const filter = isFilter(b) ? b : "all";
+    const { data } = await db.rpc("tg_admin_order", { p_number: Number(a) });
+    if (!data) return showAdminList(chatId, filter, 0, messageId);
+    return adminShow(chatId, messageId, orderView(data, orderCard(data as Order, "ru"), filter, Math.max(0, Number(c) || 0)));
+  }
 }
 
 async function onSupportMessage(c: Cfg, msg: TgMessage, lang: Lang) {
@@ -300,8 +333,13 @@ async function handleUpdate(u: Record<string, unknown>) {
   if (cq) {
     await tg("answerCallbackQuery", { callback_query_id: cq.id });
     const chatId = cq.message?.chat.id ?? cq.from.id;
-    let lang = await langFor(chatId, cq.from);
     const d = cq.data ?? "";
+    // Список всех заказов открывается только в чате администратора
+    if (d.startsWith("adm:")) {
+      if (c.admin_chat_id && chatId === Number(c.admin_chat_id)) return onAdminCallback(chatId, cq.message?.message_id, d);
+      return;
+    }
+    let lang = await langFor(chatId, cq.from);
     if (d === "orders") return onOrders(c, chatId, lang);
     if (d === "support") return send(chatId, T[lang].support_prompt);
     if (d === "lang") {
@@ -320,9 +358,12 @@ async function handleUpdate(u: Record<string, unknown>) {
   const cmd = rawCmd.startsWith("/") ? rawCmd.split("@")[0].toLowerCase() : "";
   const arg = rest.join(" ");
 
-  // Чат администратора: только ответы покупателям и привязка
+  // Чат администратора: список заказов, ответы покупателям и привязка
   if (c.admin_chat_id && msg.chat.id === Number(c.admin_chat_id)) {
     if (cmd === "/admin") return onAdminBind(msg, arg);
+    if (cmd === "/start" && arg.startsWith("admin_")) return onAdminBind(msg, arg.slice(6));
+    if (cmd === "/start" || cmd === "/menu") return showAdminPanel(msg.chat.id, "Панель заказов BOLAKAY. Кнопка «Все заказы» теперь под полем ввода.");
+    if (cmd === "/orders" || text === ORDERS_BTN) return showAdminList(msg.chat.id, "all", 0);
     if (msg.reply_to_message) return onAdminReply(msg);
     return;
   }
@@ -366,7 +407,10 @@ async function handleNotify(body: { event: string; id: string }) {
       await send(Number(data.chat_id), `${head}\n\n${orderCard(o, lang)}`, rows);
     }
     if (c.admin_chat_id && body.event === "order_created") {
-      await send(Number(c.admin_chat_id), `🆕 <b>Новый заказ</b> · ☎️ ${esc(data.phone)}\n${orderCard(o, "ru")}`);
+      await send(Number(c.admin_chat_id), `🆕 <b>Новый заказ</b> · ☎️ ${esc(data.phone)}\n${orderCard(o, "ru")}`, OPEN_LIST);
+    }
+    if (c.admin_chat_id && body.event === "order_status" && (o.status === "cancelled" || o.status === "expired")) {
+      await send(Number(c.admin_chat_id), cancelNotice(o.status, o.payment_status, data.phone, data.cancel_reason, orderCard(o, "ru")), OPEN_LIST);
     }
     return;
   }

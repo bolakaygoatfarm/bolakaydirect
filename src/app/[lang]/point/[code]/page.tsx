@@ -39,7 +39,7 @@ async function PointContent({ params }: { params: PageProps<"/[lang]/point/[code
   return (
     <div className="mx-auto max-w-5xl px-4 pb-36 pt-6">
       <section className="grain relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-5 text-white shadow-[var(--shadow-float)]">
-        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">BOLAKAY DIRECT · {d.point}</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">{d.points_title}</p>
         <h1 className="font-display mt-1.5 text-2xl font-bold">{fridge.name}</h1>
         <p className="mt-2 text-sm text-white/85">{pick(fridge, "address", lang)}</p>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">
