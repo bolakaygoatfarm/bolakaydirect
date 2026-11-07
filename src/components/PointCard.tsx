@@ -16,7 +16,9 @@ export function PointCard({ fridge: f, lang }: { fridge: Fridge; lang: Lang }) {
           <p className="text-xs font-extrabold uppercase tracking-widest text-brand-600">{d.point}</p>
           <h3 className="font-display mt-1 text-xl font-bold">{f.name}</h3>
         </div>
-        {f.status === "maintenance" ? (
+        {f.status === "planned" ? (
+          <span className="chip bg-brand-50 text-brand-700">{d.status_planned}</span>
+        ) : f.status === "maintenance" ? (
           <span className="chip bg-aged-50 text-aged">{d.status_maintenance}</span>
         ) : (
           <span className="chip bg-fresh-50 text-fresh"><span className="h-1.5 w-1.5 rounded-full bg-fresh" />{f.open_time.slice(0, 5)}–{f.close_time.slice(0, 5)}</span>
@@ -25,7 +27,11 @@ export function PointCard({ fridge: f, lang }: { fridge: Fridge; lang: Lang }) {
       <p className="mt-3 text-sm font-semibold">{pick(f, "address", lang)}</p>
       {pick(f, "landmark", lang) && <p className="mt-1 text-sm text-muted">{pick(f, "landmark", lang)}</p>}
       <div className="mt-5 flex flex-wrap gap-2">
-        <Link href={`/${lang}/point/${f.code}`} className="btn btn-primary flex-1">{d.open_point}</Link>
+        {f.status === "planned" ? (
+          <p className="flex basis-full items-center justify-center rounded-full bg-brand-50 px-5 py-3 text-center font-bold text-brand-700">{pick(f, "opening_plan", lang) || d.opening_soon}</p>
+        ) : (
+          <Link href={`/${lang}/point/${f.code}`} className="btn btn-primary flex-1">{d.open_point}</Link>
+        )}
         {map && (
           <a href={map} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">{d.on_map}</a>
         )}

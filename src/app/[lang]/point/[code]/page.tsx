@@ -32,9 +32,32 @@ async function PointContent({ params }: { params: PageProps<"/[lang]/point/[code
   if (!isLang(lang)) notFound();
   const fridge = await getFridge(code);
   if (!fridge) notFound();
-  const products = await getCatalog(code);
   const d = t(lang as Lang);
   const map = mapUrl(fridge);
+
+  // Точка ещё не открыта: сюда могут попасть по QR-коду или старой ссылке
+  if (fridge.status === "planned") {
+    return (
+      <div className="mx-auto max-w-5xl px-4 pb-16 pt-6">
+        <section className="grain relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-5 text-white shadow-[var(--shadow-float)]">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">{d.points_title}</p>
+          <h1 className="font-display mt-1.5 text-2xl font-bold">{fridge.name}</h1>
+          <p className="mt-2 text-sm text-white/85">{pick(fridge, "address", lang)}</p>
+          {pick(fridge, "landmark", lang) && <p className="mt-1 text-sm text-white/75">{pick(fridge, "landmark", lang)}</p>}
+          {map && (
+            <a href={map} target="_blank" rel="noopener noreferrer" className="chip mt-4 bg-white text-xs font-bold text-brand-700">{d.on_map} ↗</a>
+          )}
+        </section>
+        <section className="card mt-4 p-6 text-center">
+          <p className="font-display text-xl font-bold">{pick(fridge, "opening_plan", lang) || d.opening_soon}</p>
+          <p className="mt-2 text-sm text-muted">{d.point_not_open}</p>
+          <Link href={`/${lang}/points`} className="btn btn-soft mt-5">{d.all_points}</Link>
+        </section>
+      </div>
+    );
+  }
+
+  const products = await getCatalog(code);
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-36 pt-6">

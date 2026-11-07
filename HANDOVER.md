@@ -99,7 +99,7 @@
 
 1. Создайте проект Supabase, регион лучше Frankfurt.
 2. В `supabase/migrations/0006_telegram.sql` замените `hixmovjvfxrxtqittccz` на ref нового проекта. В `render.yaml` тоже.
-3. Выполните файлы `supabase/migrations` по порядку номеров, от `0001` до `0011`.
+3. Выполните файлы `supabase/migrations` по порядку номеров, от `0001` до `0015`. Файл `0013` выполняйте отдельно от `0014`.
 4. Демо-товары: `supabase/seed.sql`. Настоящие заказы и товары: перенесите резервной копией через `pg_dump` и `pg_restore`.
 5. Разверните функции:
 
@@ -132,6 +132,65 @@
 8. Проверьте: главная, витрина, заказ, кнопка Web App в боте, письмо о смене пароля.
 
 Если старый адрес `onrender.com` уже напечатан или разослан, не отключайте его и не удаляйте сервис.
+
+### Домен на vClouds
+
+Записи создаются в шаге 2 общего списка выше. Значения для сервиса `bolakay-direct`:
+
+| Type | Name | RDATA |
+|---|---|---|
+| `A` | `@` | `216.24.57.1` |
+| `CNAME` | `www` | `bolakay-direct.onrender.com` |
+
+Если Render показывает другие значения, используйте значения Render. Если сервис на новом аккаунте называется иначе, подставьте его адрес `onrender.com`.
+
+**1. Проверьте Name-серверы.** Личный кабинет `https://m.vclouds.biz/clientarea.php` → **Домены → Мои домены** → домен → вкладка **Управление**.
+
+Записи через **Manage DNS** работают, только если указаны `ns1.vclouds.uz` и `ns2.vclouds.uz`. Если указаны другие:
+
+- сначала посмотрите, нет ли на домене почты: при смене серверов почта и старые записи могут перестать работать, их нужно перенести заранее;
+- в меню справа откройте изменение Name-серверов → укажите `ns1.vclouds.uz` и `ns2.vclouds.uz` → **Изменить Name-севера**;
+- смена занимает 12–24 часа.
+
+**2. Добавьте записи.** Вкладка **Управление → Manage DNS** → **Add Record**:
+
+1. **Type**: `A`, **Name**: `@`, **RDATA**: `216.24.57.1`, остальное не меняйте → **Add Record**.
+2. Снова **Add Record**. **Type**: `CNAME`, **Name**: `www`, **RDATA**: `bolakay-direct.onrender.com` → **Add Record**.
+
+**3. Удалите мешающие записи** в том же **Manage DNS**:
+
+- все записи `AAAA` для `@` и `www`;
+- другие записи `A` для `@`;
+- запись `A` для `www`: вместе с `CNAME` она существовать не может.
+
+Записи `MX` и `TXT` не трогайте: они нужны почте и проверкам домена.
+
+**4. Проверьте.** Обновление занимает от 15 минут до часа, после смены Name-серверов до 24 часов. Введите домен на [dnschecker.org](https://dnschecker.org): для типа `A` должен быть только `216.24.57.1`. Затем нажмите **Verify** на Render и продолжайте с шага 4 общего списка.
+
+**Если не получается:** сайт не открылся за сутки или в кабинете нет **Manage DNS** → поддержка vClouds: Telegram @vhelpdesk, +998 71 200 91 00, info@vclouds.uz. Спросите также, не заморожен ли домен. В статьях vClouds не сказано, нужна ли точка в конце значения `CNAME`: пишите без точки, а если панель откажет, уточните у поддержки.
+
+---
+
+## Код из 6 цифр для сотрудников
+
+Вход в `/staff`: email и пароль, затем код из приложения на телефоне. Подходят Google Authenticator, Microsoft Authenticator и другие приложения с кодами TOTP. Код меняется каждые 30 секунд, работает без интернета и ничего не стоит: SMS не используются.
+
+**Первый вход.** Сотрудник сканирует QR-код на экране и вводит 6 цифр. При следующих входах он вводит только код.
+
+**Когда требование становится обязательным.** Панель спрашивает код у всех сразу. Проверка на стороне базы включается, когда активный администратор впервые подтвердит код: так никого не заблокирует до настройки. Функции ботов и оплаты требуют подтверждённый вход всегда.
+
+**Потерян телефон сотрудника.** Администратор: **Настройки → Сотрудники → Сбросить код**. При следующем входе сотрудник настроит код заново. Свой код сбросить нельзя: это делает другой администратор.
+
+**Потерян телефон единственного администратора.** Supabase → **SQL Editor**, подставьте email:
+
+```sql
+delete from auth.mfa_factors
+where user_id = (select id from auth.users where email = 'email@администратора');
+```
+
+**Рекомендация:** держите двух администраторов, тогда SQL не понадобится.
+
+**Передача заказчику.** Администратор заказчика настраивает код на своём телефоне при первом входе. Он не зависит от вашего телефона.
 
 ---
 
@@ -218,6 +277,7 @@
 
 - Payme: [настройка](https://developer.help.paycom.uz/nastroyka-vzaimodeystviya/), [песочница](https://developer.help.paycom.uz/pesochnitsa), [методы Merchant API](https://developer.help.paycom.uz/metody-merchant-api/), [форма оплаты](https://developer.help.paycom.uz/initsializatsiya-platezhey/otpravka-cheka-po-metodu-get/)
 - Click: [запросы Shop API](https://docs.click.uz/shop-api/requests), [ошибки](https://docs.click.uz/shop-api/errors), [кнопка оплаты](https://docs.click.uz/click-button)
+- vClouds: [запись A](https://m.vclouds.biz/knowledgebase/21/------.html), [запись CNAME](https://m.vclouds.biz/knowledgebase/22/---CNAME---.html), [привязка к другому хостингу](https://m.vclouds.biz/knowledgebase/20/-----.html)
 - [Render: свои домены](https://render.com/docs/custom-domains), [форум Render о передаче сервисов](https://community.render.com/t/transfer-services-from-one-team-to-another/12318)
 - [Supabase: передача проекта](https://supabase.com/docs/guides/platform/project-transfer)
 - Передача бота (неофициальные источники): [Unisender](https://www.unisender.com/ru/blog/kak-smenit-vladelca-chat-bota-v-telegrame/), [BotHelp](https://help.bothelp.io/en/change-owner-of-telegram-bot)

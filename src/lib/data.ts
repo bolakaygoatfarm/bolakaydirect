@@ -18,7 +18,7 @@ export async function getFridges(): Promise<Fridge[]> {
   "use cache";
   cacheLife("minutes");
   cacheTag("fridges");
-  const { data, error } = await publicClient().from("fridges").select("*").neq("status", "inactive").order("code");
+  const { data, error } = await publicClient().from("fridges").select("*").neq("status", "inactive").order("sort").order("code");
   if (error) throw new Error(error.message);
   return data as Fridge[];
 }

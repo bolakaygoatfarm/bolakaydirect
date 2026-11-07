@@ -9,7 +9,8 @@ import { s } from "./i18n";
 
 const EMPTY: Partial<Fridge> = {
   code: "", name: "", address_ru: "", address_uz: "", address_en: "", landmark_ru: "", landmark_uz: "", landmark_en: "",
-  lat: null, lng: null, open_time: "08:00", close_time: "21:00", status: "active",
+  opening_plan_ru: "", opening_plan_uz: "", opening_plan_en: "",
+  lat: null, lng: null, open_time: "08:00", close_time: "21:00", status: "planned", sort: 100,
 };
 
 export const pointUrl = (code: string) => `${SITE_URL.replace(/\/$/, "")}/point/${code}`;
@@ -17,6 +18,20 @@ export const pointUrl = (code: string) => `${SITE_URL.replace(/\/$/, "")}/point/
 export function FridgesTab({ fridges, onChange }: { fridges: Fridge[]; onChange: () => void }) {
   const [edit, setEdit] = useState<Partial<Fridge> | null>(null);
   const [qr, setQr] = useState<Fridge | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function toggle(f: Fridge) {
+    const open = f.status === "active";
+    if (!confirm(open ? s("Закрыть точку {0}? Новые заказы перестанут приниматься. Уже оформленные заказы останутся.", f.name) : s("Открыть точку {0}? Покупатели смогут оформлять заказы.", f.name))) return;
+    setBusyId(f.id);
+    setErr(null);
+    const { error } = await browserClient().from("fridges").update({ status: open ? "planned" : "active" }).eq("id", f.id);
+    setBusyId(null);
+    if (error) setErr(error.message);
+    else onChange();
+  }
+
   return (
     <Section title={s("Точки (холодильники)")} action={<button className="btn btn-primary min-h-10 text-sm" onClick={() => setEdit({ ...EMPTY })}>{s("+ Точка")}</button>}>
       <ul className="grid gap-3 sm:grid-cols-2">
@@ -27,19 +42,25 @@ export function FridgesTab({ fridges, onChange }: { fridges: Fridge[]; onChange:
                 <p className="font-display text-lg font-bold">{f.name}</p>
                 <p className="text-xs text-muted">{pointUrl(f.code)}</p>
               </div>
-              <span className={`chip ${f.status === "active" ? "bg-fresh-50 text-fresh" : f.status === "maintenance" ? "bg-aged-50 text-aged" : "bg-danger-50 text-danger"}`}>
-                {s({ active: "Работает", maintenance: "Обслуживание", inactive: "Отключена" }[f.status])}
+              <span className={`chip ${f.status === "active" ? "bg-fresh-50 text-fresh" : f.status === "planned" ? "bg-brand-50 text-brand-700" : f.status === "maintenance" ? "bg-aged-50 text-aged" : "bg-danger-50 text-danger"}`}>
+                {s({ active: "Работает", planned: "Закрыта", maintenance: "Обслуживание", inactive: "Отключена" }[f.status])}
               </span>
             </div>
-            <p className="mt-2 text-sm">{f.address_ru}</p>
+            <p className="mt-2 text-sm">{f.address_ru || <span className="text-aged">{s("Адрес не указан")}</span>}</p>
+            {f.landmark_ru && <p className="text-sm text-muted">{f.landmark_ru}</p>}
             <p className="text-sm text-muted">{f.open_time.slice(0, 5)}–{f.close_time.slice(0, 5)}</p>
-            <div className="mt-3 flex gap-2">
+            {f.status === "planned" && f.opening_plan_ru && <p className="mt-1 text-sm font-bold text-brand-700">{f.opening_plan_ru}</p>}
+            <button className={`btn mt-3 min-h-10 w-full text-sm ${f.status === "active" ? "btn-danger" : "btn-primary"}`} disabled={busyId === f.id} onClick={() => toggle(f)}>
+              {f.status === "active" ? s("Закрыть точку") : s("Открыть точку")}
+            </button>
+            <div className="mt-2 flex gap-2">
               <button className="btn btn-soft min-h-9 flex-1 text-xs" onClick={() => setQr(f)}>{s("QR-код")}</button>
               <button className="btn btn-ghost min-h-9 flex-1 text-xs" onClick={() => setEdit(f)}>{s("Изменить")}</button>
             </div>
           </li>
         ))}
       </ul>
+      <div className="mt-3"><ErrorNote text={err} /></div>
       {edit && <FridgeForm initial={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); onChange(); }} />}
       {qr && <QrModal fridge={qr} onClose={() => setQr(null)} />}
     </Section>
@@ -79,7 +100,7 @@ function FridgeForm({ initial, onClose, onSaved }: { initial: Partial<Fridge>; o
     setErr(null);
     const { id, ...rest } = f as Fridge & { created_at?: string };
     delete (rest as { created_at?: string }).created_at;
-    const payload = { ...rest, code: (rest.code || "").trim().toLowerCase(), lat: rest.lat ? Number(rest.lat) : null, lng: rest.lng ? Number(rest.lng) : null };
+    const payload = { ...rest, code: (rest.code || "").trim().toLowerCase(), lat: rest.lat ? Number(rest.lat) : null, lng: rest.lng ? Number(rest.lng) : null, sort: Number(rest.sort) || 0 };
     const res = id ? await sb.from("fridges").update(payload).eq("id", id) : await sb.from("fridges").insert(payload);
     setBusy(false);
     if (res.error) setErr(res.error.code === "23505" ? s("Такой код точки уже есть") : res.error.message);
@@ -100,14 +121,21 @@ function FridgeForm({ initial, onClose, onSaved }: { initial: Partial<Fridge>; o
         <Field label={s("Ориентир (RU)")}><input {...txt("landmark_ru")} /></Field>
         <Field label={s("Ориентир (EN)")}><input {...txt("landmark_en")} /></Field>
         <div className="grid grid-cols-2 gap-3">
+          <Field label={s("Порядок в списке")}><input className="field" type="number" value={f.sort ?? 100} onChange={(e) => set("sort", Number(e.target.value))} /></Field>
+          <div />
           <Field label={s("Широта")}><input className="field" inputMode="decimal" value={f.lat ?? ""} onChange={(e) => set("lat", (e.target.value as unknown) as number)} /></Field>
           <Field label={s("Долгота")}><input className="field" inputMode="decimal" value={f.lng ?? ""} onChange={(e) => set("lng", (e.target.value as unknown) as number)} /></Field>
           <Field label={s("Открытие")}><input className="field" type="time" value={f.open_time?.slice(0, 5)} onChange={(e) => set("open_time", e.target.value)} required /></Field>
           <Field label={s("Закрытие")}><input className="field" type="time" value={f.close_time?.slice(0, 5)} onChange={(e) => set("close_time", e.target.value)} required /></Field>
         </div>
+        <Field label={s("Срок открытия (UZ)")}><input {...txt("opening_plan_uz")} placeholder="2027-yil avgustda ochiladi" /></Field>
+        <Field label={s("Срок открытия (RU)")}><input {...txt("opening_plan_ru")} placeholder="Откроется в августе 2027 года" /></Field>
+        <Field label={s("Срок открытия (EN)")}><input {...txt("opening_plan_en")} placeholder="Opens in August 2027" /></Field>
+        <p className="rounded-xl bg-brand-50 p-3 text-xs">{s("Этот текст покупатели видят вместо кнопки, пока точка закрыта. Если нет точного адреса, напишите «Метро Технопарк».")}</p>
         <Field label={s("Статус")}>
           <select className="field" value={f.status} onChange={(e) => set("status", e.target.value as Fridge["status"])}>
             <option value="active">{s("Работает — принимает заказы")}</option>
+            <option value="planned">{s("Закрыта — показан срок открытия, заказы закрыты")}</option>
             <option value="maintenance">{s("Обслуживание — витрина видна, заказы закрыты")}</option>
             <option value="inactive">{s("Отключена — скрыта")}</option>
           </select>

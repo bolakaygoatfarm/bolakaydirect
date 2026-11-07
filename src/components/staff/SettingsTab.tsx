@@ -10,7 +10,7 @@ import { PaymentSettings } from "./PaymentSettings";
 import { s } from "./i18n";
 
 interface S { payment_hold_minutes: number; pickup_grace_minutes: number; support_phone: string | null; click_enabled: boolean; payme_enabled: boolean }
-interface StaffRow { user_id: string; email: string; full_name: string; role: Me["role"]; is_active: boolean }
+interface StaffRow { user_id: string; email: string; full_name: string; role: Me["role"]; is_active: boolean; mfa_enabled: boolean }
 
 const ROLE_RU = { admin: "Администратор", operator: "Оператор точки", courier: "Курьер / работник фермы" };
 
@@ -55,6 +55,14 @@ export function SettingsTab({ me }: { me: Me }) {
     void loadStaff();
   }
 
+  async function resetCode(r: StaffRow) {
+    if (!confirm(s("Сбросить код для {0}? Сотрудник выйдет из панели и при следующем входе настроит код заново.", r.full_name))) return;
+    setErr(null);
+    const { error } = await sb.rpc("admin_reset_staff_mfa", { p_user_id: r.user_id });
+    if (error) return setErr(staffError(error.message));
+    void loadStaff();
+  }
+
   if (!st) return <p className="mt-5 text-muted">{s("Загрузка…")}</p>;
 
   return (
@@ -79,8 +87,14 @@ export function SettingsTab({ me }: { me: Me }) {
         <ul className="grid gap-2">
           {staff.map((r) => (
             <li key={r.user_id} className={`card flex flex-wrap items-center justify-between gap-3 p-3 text-sm ${r.is_active ? "" : "opacity-60"}`}>
-              <span><b>{r.full_name}</b> <span className="text-muted">· {r.email}</span></span>
-              <span className="flex items-center gap-2">
+              <span>
+                <b>{r.full_name}</b> <span className="text-muted">· {r.email}</span>
+                <span className={`chip ml-2 ${r.mfa_enabled ? "bg-fresh-50 text-fresh" : "bg-aged-50 text-aged"}`}>{r.mfa_enabled ? s("Код настроен") : s("Код не настроен")}</span>
+              </span>
+              <span className="flex flex-wrap items-center gap-2">
+                {r.user_id !== me.user_id && r.mfa_enabled && (
+                  <button className="btn btn-soft min-h-9 px-3 text-xs" onClick={() => resetCode(r)}>{s("Сбросить код")}</button>
+                )}
                 <select className="field min-h-9 w-auto py-1 text-sm" value={r.role} disabled={r.user_id === me.user_id} onChange={(e) => upsert(r.email, r.full_name, e.target.value as Me["role"], r.is_active)}>
                   {Object.entries(ROLE_RU).map(([k, v]) => <option key={k} value={k}>{s(v)}</option>)}
                 </select>

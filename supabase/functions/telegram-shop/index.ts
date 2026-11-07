@@ -1113,12 +1113,21 @@ async function handleLink(req: Request) {
 }
 
 // ---------- подключение бота из админ-панели ----------
+/** Вход подтверждён 6-значным кодом. Подпись токена уже проверил getUser */
+function codeConfirmed(jwt: string) {
+  try {
+    return JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).aal === "aal2";
+  } catch {
+    return false;
+  }
+}
+
 async function handleSetup(req: Request) {
   const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: u } = await db.auth.getUser(jwt);
   if (!u?.user) return json({ ok: false, error: "UNAUTHORIZED" }, 401);
   const { data: staff } = await db.from("staff").select("role,is_active").eq("user_id", u.user.id).maybeSingle();
-  if (!staff || staff.role !== "admin" || !staff.is_active) return json({ ok: false, error: "FORBIDDEN" }, 403);
+  if (!staff || staff.role !== "admin" || !staff.is_active || !codeConfirmed(jwt)) return json({ ok: false, error: "FORBIDDEN" }, 403);
   if (!TOKEN) return json({ ok: false, error: "NO_TOKEN" }, 400);
 
   const body = await req.json().catch(() => ({}));

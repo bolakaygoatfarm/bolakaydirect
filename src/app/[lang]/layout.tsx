@@ -107,6 +107,11 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
               <span>© BOLAKAY GOAT FARM</span>
             </div>
           </div>
+          <div className="relative mx-auto flex max-w-5xl flex-wrap gap-x-6 gap-y-2 px-4 pb-8 text-sm font-bold text-white/80">
+            <a className="hover:text-white" href="https://t.me/bolakayschool" target="_blank" rel="noopener noreferrer">Telegram: @bolakayschool</a>
+            <a className="hover:text-white" href="https://t.me/contactbolakay" target="_blank" rel="noopener noreferrer">Telegram: @contactbolakay</a>
+            <a className="hover:text-white" href="https://www.youtube.com/@bolakaygoatfarm" target="_blank" rel="noopener noreferrer">YouTube: @bolakaygoatfarm</a>
+          </div>
         </footer>
       </body>
     </html>

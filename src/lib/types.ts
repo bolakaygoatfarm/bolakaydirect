@@ -49,7 +49,11 @@ export interface Fridge {
   lng: number | null;
   open_time: string;
   close_time: string;
-  status: "active" | "maintenance" | "inactive";
+  status: "active" | "maintenance" | "inactive" | "planned";
+  opening_plan_uz?: string | null;
+  opening_plan_ru?: string | null;
+  opening_plan_en?: string | null;
+  sort?: number;
 }
 
 /** Строка RPC fridge_catalog */

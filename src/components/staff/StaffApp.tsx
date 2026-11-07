@@ -16,6 +16,7 @@ import { ReportsTab } from "./ReportsTab";
 import { SettingsTab } from "./SettingsTab";
 import { STAFF_LANG_KEY, STAFF_LANGS, s, setStaffLang, type StaffLang } from "./i18n";
 import { ThemeToggle } from "../ThemeToggle";
+import { MfaScreen, useMfa } from "./MfaScreen";
 
 export interface Me { user_id: string; full_name: string; role: "admin" | "operator" | "courier" }
 
@@ -56,6 +57,9 @@ export function StaffApp() {
     return () => data.subscription.unsubscribe();
   }, [sb]);
   const recovery = useRecovery();
+  const mfa = useMfa(session);
+  // После ввода кода сессия обновляется сама; это на случай, если событие уже прошло
+  const refreshSession = () => sb.auth.getSession().then(({ data }) => setSession(data.session));
 
   useEffect(() => {
     if (!session) return;
@@ -63,7 +67,7 @@ export function StaffApp() {
     (async () => {
       const [m, f] = await Promise.all([
         sb.from("staff").select("user_id,full_name,role,is_active").eq("user_id", session.user.id).maybeSingle(),
-        sb.from("fridges").select("*").order("code"),
+        sb.from("fridges").select("*").order("sort").order("code"),
       ]);
       if (!alive) return;
       setMe(m.data && m.data.is_active ? (m.data as Me) : null);
@@ -77,13 +81,27 @@ export function StaffApp() {
   }, [session, sb]);
 
   const reloadFridges = async () => {
-    const { data } = await sb.from("fridges").select("*").order("code");
+    const { data } = await sb.from("fridges").select("*").order("sort").order("code");
     setFridges((data ?? []) as Fridge[]);
   };
 
   if (session === undefined) return <Center>{s("Загрузка…")}</Center>;
   // Пришли по ссылке из письма — сначала новый пароль, потом панель
-  if (session && recovery) return <NewPassword lang={lang} onLang={changeLang} onDone={() => setRecovery(false)} />;
+  const mfaFailed = (
+    <Center>
+      <p className="font-bold">{s("Не удалось проверить вход. Проверьте интернет и попробуйте снова.")}</p>
+      <button className="btn btn-primary mt-5" onClick={() => window.location.reload()}>{s("Попробовать ещё раз")}</button>
+      <button className="btn btn-ghost mt-2" onClick={() => sb.auth.signOut()}>{s("Выйти")}</button>
+    </Center>
+  );
+  if (session && recovery) {
+    if (mfa === undefined) return <Center>{s("Загрузка…")}</Center>;
+    if (mfa.failed) return mfaFailed;
+    // Если код уже настроен, Supabase не даст сменить пароль без него
+    if (mfa.factorId && mfa.level !== "aal2")
+      return <AuthShell lang={lang} onLang={changeLang}><MfaScreen factorId={mfa.factorId} onDone={refreshSession} /></AuthShell>;
+    return <NewPassword lang={lang} onLang={changeLang} onDone={() => setRecovery(false)} />;
+  }
   if (!session) return <Login lang={lang} onLang={changeLang} />;
   if (me === undefined) return <Center>{s("Загрузка…")}</Center>;
   if (me === null)
@@ -94,6 +112,11 @@ export function StaffApp() {
         <button className="btn btn-ghost mt-5" onClick={() => sb.auth.signOut()}>{s("Выйти")}</button>
       </Center>
     );
+  if (mfa === undefined) return <Center>{s("Загрузка…")}</Center>;
+  if (mfa.failed) return mfaFailed;
+  // Панель открывается только после кода из приложения
+  if (mfa.level !== "aal2")
+    return <AuthShell lang={lang} onLang={changeLang}><MfaScreen factorId={mfa.factorId} onDone={refreshSession} /></AuthShell>;
 
   const tabs = TABS.filter((t) => (t.roles as readonly string[]).includes(me.role));
   const fridge = fridges.find((f) => f.id === fridgeId) ?? null;

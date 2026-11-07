@@ -21,6 +21,12 @@ Deno.serve(createHandler({
     const { data: u } = await db.auth.getUser(jwt);
     if (!u?.user) return false;
     const { data: staff } = await db.from("staff").select("role,is_active").eq("user_id", u.user.id).maybeSingle();
-    return !!staff && staff.role === "admin" && staff.is_active;
+    if (!staff || staff.role !== "admin" || !staff.is_active) return false;
+    // Вход должен быть подтверждён 6-значным кодом. Подпись токена уже проверил getUser
+    try {
+      return JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).aal === "aal2";
+    } catch {
+      return false;
+    }
   },
 }));
