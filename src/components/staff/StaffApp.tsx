@@ -17,6 +17,7 @@ import { SettingsTab } from "./SettingsTab";
 import { STAFF_LANG_KEY, STAFF_LANGS, s, setStaffLang, type StaffLang } from "./i18n";
 import { ThemeToggle } from "../ThemeToggle";
 import { EmailCodeScreen, useStaffCode } from "./EmailCodeScreen";
+import { STAFF_PATH_KEY } from "../AuthLinkForwarder";
 
 export interface Me { user_id: string; full_name: string; role: "admin" | "operator" | "courier" }
 
@@ -49,6 +50,8 @@ export function StaffApp() {
   };
 
   useEffect(() => {
+    // Адрес панели запоминается на устройстве: по нему ссылка из письма о смене пароля найдёт панель
+    try { localStorage.setItem(STAFF_PATH_KEY, window.location.pathname); } catch { /* ignore */ }
     sb.auth.getSession().then(({ data }) => setSession(data.session));
     const { data } = sb.auth.onAuthStateChange((event, sess) => {
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
@@ -245,7 +248,8 @@ function Login({ lang, onLang }: { lang: StaffLang; onLang: (l: StaffLang) => vo
     setBusy(true);
     setErr(null);
     // Ссылка из письма вернёт на эту же страницу; там откроется экран «Новый пароль»
-    const { error } = await browserClient().auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/staff` });
+    // Ссылка из письма вернёт на тот же адрес панели, по которому сотрудник её открыл (он может быть секретным)
+    const { error } = await browserClient().auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}${window.location.pathname}` });
     setBusy(false);
     // Не сообщаем, есть ли такой аккаунт — одинаковый ответ для любого адреса
     if (error && (error.status === 429 || /rate limit|security purposes/i.test(error.message))) return setErr(authError(error));
