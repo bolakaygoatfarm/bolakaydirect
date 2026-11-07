@@ -17,6 +17,44 @@ import { t } from "@/lib/i18n";
 import { isLang, LANGS } from "@/lib/types";
 import { SITE_URL } from "@/lib/supabase";
 
+const CONTACT_PHONE = "+998974504434";
+
+const ICONS = {
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />,
+  telegram: <path d="m21 4-3 16-6-4.5-3 3v-5l9-8-11 7-4-1.5Z" />,
+  instagram: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".6" fill="currentColor" /></>,
+  youtube: <><rect x="2" y="5" width="20" height="14" rx="4" /><path d="m10 9 5 3-5 3Z" fill="currentColor" /></>,
+};
+
+function FooterGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="col-span-2 flex min-w-0 flex-col gap-3 sm:col-span-1">
+      <span className="font-bold text-butter">{title}</span>
+      {children}
+    </div>
+  );
+}
+
+/** Ссылка подвала с иконкой. Внешние адреса открываются в новой вкладке, телефон — звонком */
+function FooterLink({ href, icon, service, label }: { href: string; icon: keyof typeof ICONS; service: string; label: string }) {
+  const external = href.startsWith("http");
+  return (
+    <a
+      href={href}
+      className="group flex min-w-0 items-center gap-2.5 font-bold text-white/85 hover:text-white"
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+    >
+      <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 transition group-hover:bg-white/20">
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{ICONS[icon]}</svg>
+      </span>
+      <span className="min-w-0 leading-tight">
+        <span className="block text-xs font-normal text-white/50">{service}</span>
+        <span className="block truncate">{label}</span>
+      </span>
+    </a>
+  );
+}
+
 export function generateStaticParams() {
   return LANGS.map((lang) => ({ lang }));
 }
@@ -47,7 +85,8 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
   const { lang } = await params;
   if (!isLang(lang)) notFound();
   const d = t(lang);
-  const phone = await getSupportPhone();
+  // Телефон из настроек панели, если его там поменяют; иначе основной номер фермы
+  const contactPhone = (await getSupportPhone()) ?? CONTACT_PHONE;
   return (
     <html lang={lang} data-scroll-behavior="smooth" suppressHydrationWarning className={onest.variable}>
       <head>
@@ -91,27 +130,27 @@ export default async function LangLayout({ children, params }: LayoutProps<"/[la
         </main>
         <Wave className="bg-page text-night" />
         <footer className="night -mt-px">
-          <div className="relative mx-auto grid max-w-5xl gap-6 px-4 py-12 text-sm text-white/65 sm:grid-cols-3">
-            <div>
+          <div className="relative mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-8 px-4 pt-12 pb-8 text-sm text-white/65 lg:grid-cols-[1.4fr_1fr_1.2fr_1.2fr]">
+            <div className="col-span-2 lg:col-span-1">
               <Logo onDark />
               <p className="mt-3 max-w-xs">{d.footer_text}</p>
             </div>
-            <div className="flex flex-col gap-2">
+            <nav className="col-span-2 flex flex-wrap gap-x-6 gap-y-2 lg:col-span-1 lg:flex-col" aria-label="BOLAKAY">
               <Link className="hover:text-white" href={`/${lang}/points`}>{d.nav_points}</Link>
               <Link className="hover:text-white" href={`/${lang}/about`}>{d.nav_about}</Link>
               <Link prefetch={false} className="hover:text-white" href={`/${lang}/orders`}>{d.nav_orders}</Link>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="font-bold text-butter">{d.support}</span>
-              {phone && <a className="hover:text-white" href={`tel:${phone}`}>{formatPhone(phone)}</a>}
-              <span>© BOLAKAY GOAT FARM</span>
-            </div>
+            </nav>
+            <FooterGroup title={d.contact_us}>
+              <FooterLink href={`tel:${contactPhone}`} icon="phone" service={{ uz: "Telefon", ru: "Телефон", en: "Phone" }[lang]} label={formatPhone(contactPhone)} />
+              <FooterLink href="https://t.me/contactbolakay" icon="telegram" service="Telegram" label="@contactbolakay" />
+            </FooterGroup>
+            <FooterGroup title={d.our_channels}>
+              <FooterLink href="https://t.me/bolakayschool" icon="telegram" service="Telegram" label="@bolakayschool" />
+              <FooterLink href="https://www.instagram.com/bolakaygoatfarm/" icon="instagram" service="Instagram" label="@bolakaygoatfarm" />
+              <FooterLink href="https://www.youtube.com/@bolakaygoatfarm" icon="youtube" service="YouTube" label="@bolakaygoatfarm" />
+            </FooterGroup>
           </div>
-          <div className="relative mx-auto flex max-w-5xl flex-wrap gap-x-6 gap-y-2 px-4 pb-8 text-sm font-bold text-white/80">
-            <a className="hover:text-white" href="https://t.me/bolakayschool" target="_blank" rel="noopener noreferrer">Telegram: @bolakayschool</a>
-            <a className="hover:text-white" href="https://t.me/contactbolakay" target="_blank" rel="noopener noreferrer">Telegram: @contactbolakay</a>
-            <a className="hover:text-white" href="https://www.youtube.com/@bolakaygoatfarm" target="_blank" rel="noopener noreferrer">YouTube: @bolakaygoatfarm</a>
-          </div>
+          <p className="relative mx-auto max-w-5xl border-t border-white/10 px-4 py-5 text-xs text-white/45">© BOLAKAY GOAT FARM</p>
         </footer>
       </body>
     </html>
