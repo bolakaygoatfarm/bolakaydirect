@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProducts } from "@/lib/data";
-import { t, type HeroTarget } from "@/lib/i18n";
+import { t } from "@/lib/i18n";
 import { isLang } from "@/lib/types";
 import { HeroScrub } from "@/components/HeroScrub";
 import { ProductCarousel } from "@/components/ProductCarousel";
@@ -18,13 +18,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
   if (!isLang(lang)) notFound();
   const d = t(lang);
   const products = await getProducts();
-  const heroHref = (to: HeroTarget) => (to === "points" ? `/${lang}/points` : `#${to}`);
-  // Заголовок с разметкой: "\n" — перенос строки, [текст] — под тёплым маркером.
-  // Без разметки (uz/en пока) маркер получают два последних слова («bir kun» / «one day»).
-  const title = d.hero_title.includes("[")
-    ? d.hero_title
-    : d.hero_title.replace(/(\S+ \S+)$/, "[$1]");
-  const titleLines = title.split("\n").map((line, i) => (
+  // Заголовок с разметкой: "\n" — перенос строки, [текст] — под тёплым маркером
+  const titleLines = d.hero_title.split("\n").map((line, i) => (
     <span key={i} className="block">
       {line.split(/(\[[^\]]+\])/).map((part, j) =>
         part.startsWith("[") ? (
@@ -52,10 +47,10 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
           </h1>
           <p className="mt-5 max-w-lg text-[1.05rem] leading-relaxed text-white/85">{d.hero_text}</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href={heroHref(d.hero_cta_to)} className="btn btn-butter px-6">
+            <a href="#catalog" className="btn btn-butter px-6">
               {d.hero_cta} <Arrow />
-            </Link>
-            <Link href={heroHref(d.hero_cta2_to)} className="btn border border-white/40 bg-[#0a2747]/55 text-white hover:bg-[#0a2747]/75">
+            </a>
+            <Link href={`/${lang}/points`} className="btn border border-white/40 bg-[#0a2747]/55 text-white hover:bg-[#0a2747]/75">
               {d.hero_cta2}
             </Link>
           </div>

@@ -1,21 +1,17 @@
 import type { Lang } from "./types";
 
-export type HeroTarget = "catalog" | "points" | "how";
-
 const uz = {
   brand: "BOLAKAY",
   tagline: "Echki fermasidan to‘g‘ridan-to‘g‘ri",
   nav_points: "Nuqtalar",
   nav_orders: "Buyurtmalarim",
   nav_about: "Ferma haqida",
-  hero_title: "Echki suti — fermadan sovutgichgacha bir kun",
+  // Перевод строки — обязательный перенос, [слово] — под жёлтым маркером
+  hero_title: "Echki suti.\nHar qachongidan ham [yaqinroq].",
   hero_text:
-    "BOLAKAY o‘z fermasida echki suti, yogurt, sariyog‘ va sutli ichimliklar tayyorlaydi. Har bir mahsulotda ishlab chiqarilgan sana va yaroqlilik muddati ko‘rsatiladi.",
-  hero_cta: "Yaqin nuqtani tanlash",
-  hero_cta2: "Qanday ishlaydi",
-  // Куда ведут кнопки первого экрана: catalog — ассортимент ниже, points — список точек, how — «Как это работает»
-  hero_cta_to: "points" as HeroTarget,
-  hero_cta2_to: "how" as HeroTarget,
+    "Fermamizdan sut, yogurt va mayin sariyog‘ — dasturxoningiz uchun. Sevimlingizni tanlang va eng yaqin BOLAKAY nuqtasidan olib keting.",
+  hero_cta: "Mahsulotlarni tanlash",
+  hero_cta2: "Yaqin nuqtani topish",
   how_title: "Qanday ishlaydi",
   how_1_t: "QR-kodni skanerlang",
   how_1_d: "BOLAKAY sovutgichidagi QR-kod sizni aynan shu nuqtaning vitrinasiga olib boradi.",
@@ -226,8 +222,6 @@ const ru: Dict = {
     "Молоко, йогурт и нежное масло с нашей фермы — для вашего стола. Выберите любимое и заберите в ближайшей точке BOLAKAY.",
   hero_cta: "Выбрать продукты",
   hero_cta2: "Найти точку рядом",
-  hero_cta_to: "catalog",
-  hero_cta2_to: "points",
   how_title: "Как это работает",
   how_1_t: "Сканируйте QR-код",
   how_1_d: "QR-код на холодильнике BOLAKAY откроет витрину именно этой точки.",
@@ -430,13 +424,11 @@ const en: Dict = {
   nav_points: "Locations",
   nav_orders: "My orders",
   nav_about: "About the farm",
-  hero_title: "Goat milk — from the farm to the fridge in one day",
+  hero_title: "Goat milk.\n[Closer] than ever.",
   hero_text:
-    "BOLAKAY makes goat milk, yogurt, butter and milk drinks on its own farm. Every item shows its production date and shelf life.",
-  hero_cta: "Find the nearest location",
-  hero_cta2: "How it works",
-  hero_cta_to: "points",
-  hero_cta2_to: "how",
+    "Milk, yogurt and soft butter from our farm — for your table. Choose your favourite and pick it up at the nearest BOLAKAY point.",
+  hero_cta: "Choose products",
+  hero_cta2: "Find a point nearby",
   how_title: "How it works",
   how_1_t: "Scan the QR code",
   how_1_d: "The QR code on a BOLAKAY fridge opens the shop of that exact location.",
