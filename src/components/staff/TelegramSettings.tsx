@@ -5,7 +5,7 @@ import { browserClient } from "@/lib/supabase";
 import { ErrorNote, Section } from "./ui";
 import { s, rich } from "./i18n";
 
-interface Status { bot_username: string | null; admin_chat_linked: boolean; site_url: string; linked_customers: number }
+interface Status { bot_username: string | null; admin_chat_linked: boolean; admin_name?: string | null; site_url: string; linked_customers: number }
 
 const FUNCTION_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/telegram-bot`;
 
@@ -23,7 +23,6 @@ export function TelegramSettings() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
-  const [code, setCode] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, error } = await sb.rpc("admin_tg_status");
@@ -57,11 +56,12 @@ export function TelegramSettings() {
     void load();
   }
 
-  async function bindCode() {
+  async function unbind() {
+    if (!window.confirm(s("Отключить чат администратора? Заказы перестанут приходить в Telegram, пока кто-то из администраторов снова не войдёт в боте."))) return;
     setErr(null);
-    const { data, error } = await sb.rpc("admin_tg_bind_code");
+    const { error } = await sb.rpc("admin_tg_unbind");
     if (error) setErr(error.message);
-    else setCode(data as string);
+    void load();
   }
 
   if (!st) return <Section title={s("Telegram-бот")}><p className="text-muted">{s("Загрузка…")}</p><ErrorNote text={err} /></Section>;
@@ -76,7 +76,9 @@ export function TelegramSettings() {
             {st.bot_username ? s("Бот: @{0}", st.bot_username) : s("Бот не подключён")}
           </span>
           <span className={`chip ${st.admin_chat_linked ? "bg-fresh-50 text-fresh" : "bg-aged-50 text-aged"}`}>
-            {st.admin_chat_linked ? s("Чат администратора подключён") : s("Чат администратора не подключён")}
+            {st.admin_chat_linked
+              ? st.admin_name ? s("Чат администратора: {0}", st.admin_name) : s("Чат администратора подключён")
+              : s("Чат администратора не подключён")}
           </span>
           <span className="chip bg-brand-50 text-brand-700">{s("Покупателей в боте: {0}", st.linked_customers)}</span>
         </div>
@@ -96,16 +98,12 @@ export function TelegramSettings() {
         {st.bot_username && (
           <div className="rounded-xl bg-brand-50 p-3">
             <p className="font-bold">{s("Чат администратора")}</p>
-            <p className="mt-1 text-muted">{s("Сюда приходят новые заказы и вопросы покупателей. Отвечайте на вопрос через Reply — ответ уйдёт покупателю. Можно подключить личный чат или группу сотрудников.")}</p>
-            {code ? (
-              <div className="mt-2 grid gap-2">
-                <a className="btn btn-primary w-fit" href={`https://t.me/${st.bot_username}?start=admin_${code}`} target="_blank" rel="noopener noreferrer">{s("Подключить личный чат")}</a>
-                <a className="btn btn-soft w-fit" href={`https://t.me/${st.bot_username}?startgroup=admin_${code}`} target="_blank" rel="noopener noreferrer">{s("Добавить бота в группу")}</a>
-                <p className="text-xs text-muted">{rich(s("Или отправьте боту команду `/admin {0}`. Код действует 15 минут.", code))}</p>
-              </div>
-            ) : (
-              <button className="btn btn-soft mt-2" onClick={bindCode}>{s("Получить код подключения")}</button>
-            )}
+            <p className="mt-1 text-muted">{s("Сюда приходят новые заказы и вопросы покупателей. Отвечайте на вопрос через Reply — ответ уйдёт покупателю.")}</p>
+            <p className="mt-2 text-muted">{rich(s("Чтобы подключить свой личный чат, отправьте боту `/admin` и войдите: email, пароль и код из письма. Подключить чат может только администратор. Если его отключат в панели или сменят роль, чат отключится сам. Отключить вручную: команда `/logout` в боте или кнопка ниже."))}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <a className="btn btn-primary w-fit" href={`https://t.me/${st.bot_username}?start=admin`} target="_blank" rel="noopener noreferrer">{s("Открыть бота и войти")}</a>
+              {st.admin_chat_linked && <button className="btn btn-ghost w-fit" onClick={unbind}>{s("Отключить чат")}</button>}
+            </div>
           </div>
         )}
         {ok && <p className="rounded-xl bg-fresh-50 p-3 font-bold text-fresh">{ok}</p>}

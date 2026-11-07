@@ -3,6 +3,8 @@
 //  POST /telegram-bot          — webhook от Telegram (заголовок X-Telegram-Bot-Api-Secret-Token)
 //  POST /telegram-bot/notify   — события из базы через pg_net (заголовок x-bolakay-secret)
 //  POST /telegram-bot/setup    — подключение бота из админ-панели (JWT администратора)
+//  POST /telegram-bot/bind     — чат администратора: вход на странице /tg-admin внутри Telegram
+//                                (JWT администратора с подтверждённым кодом + подпись Telegram initData)
 //
 // Секрет TELEGRAM_BOT_TOKEN задаётся в Supabase → Edge Functions → Secrets.
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -207,7 +209,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function onStart(c: Cfg, msg: TgMessage, payload: string) {
   const chatId = msg.chat.id;
   const from = msg.from;
-  if (payload.startsWith("admin_")) return onAdminBind(msg, payload.slice(6));
+  if (payload === "admin" || payload.startsWith("admin_")) return onAdminLogin(c, msg);
   if (msg.chat.type !== "private") return;
   if (UUID.test(payload)) {
     const pref: Lang = from?.language_code?.startsWith("ru") ? "ru" : "uz";
@@ -245,12 +247,25 @@ async function onRepeat(c: Cfg, chatId: number, lang: Lang, token: string) {
   return send(chatId, `🔁 ${T[lang].order} № ${o.number}\n${T[lang].repeat_text}`, [[{ text: T[lang].btn_order_now, url: repeatUrl(c, o, lang) }]]);
 }
 
-async function onAdminBind(msg: TgMessage, code: string) {
-  const ok = (await db.rpc("tg_bind_admin", { p_code: code.trim(), p_chat_id: msg.chat.id })).data === true;
-  cfgCache = null;
-  if (ok) return showAdminPanel(msg.chat.id, "✅ Этот чат подключён как чат администратора BOLAKAY: сюда будут приходить новые заказы, отмены и обращения покупателей. Чтобы ответить покупателю, ответьте (Reply) на его сообщение.");
-  return send(msg.chat.id, "Код неверный или устарел. Получите новый код в панели: Настройки → Telegram.");
+/**
+ * /admin: кнопка входа для администратора. Страница входа открывается внутри Telegram (Web App),
+ * поэтому пароль не остаётся в переписке с ботом. Само сообщение ничего не открывает: доступ даёт только вход.
+ */
+async function onAdminLogin(c: Cfg, msg: TgMessage) {
+  if (msg.chat.type !== "private") {
+    return send(msg.chat.id, "Чат администратора подключается только в личных сообщениях с ботом. Откройте бота и отправьте /admin.");
+  }
+  const url = `${c.site_url}/tg-admin`;
+  if (!isPublicUrl(url)) return send(msg.chat.id, "Вход недоступен: бот подключён не с адреса сайта на https. Нажмите «Обновить подключение бота» в панели на боевом сайте.");
+  return tg("sendMessage", {
+    chat_id: msg.chat.id,
+    text: "🔐 <b>Вход для администратора BOLAKAY</b>\n\nНажмите кнопку и войдите: email, пароль и код из письма. После входа этот чат начнёт получать заказы и обращения покупателей.\n\nЕсли вы не администратор, просто закройте это сообщение.",
+    parse_mode: "HTML",
+    reply_markup: { inline_keyboard: [[{ text: "🔐 Войти как администратор", web_app: { url } }]] },
+  });
 }
+
+const ADMIN_WELCOME = "✅ Вход выполнен. Этот чат подключён как чат администратора BOLAKAY: сюда будут приходить новые заказы, отмены и обращения покупателей. Чтобы ответить покупателю, ответьте (Reply) на его сообщение.\n\nОтключить чат: /logout";
 
 // ---------- чат администратора: список заказов ----------
 /** Постоянная кнопка под полем ввода и сразу список */
@@ -360,15 +375,18 @@ async function handleUpdate(u: Record<string, unknown>) {
 
   // Чат администратора: список заказов, ответы покупателям и привязка
   if (c.admin_chat_id && msg.chat.id === Number(c.admin_chat_id)) {
-    if (cmd === "/admin") return onAdminBind(msg, arg);
-    if (cmd === "/start" && arg.startsWith("admin_")) return onAdminBind(msg, arg.slice(6));
-    if (cmd === "/start" || cmd === "/menu") return showAdminPanel(msg.chat.id, "Панель заказов BOLAKAY. Кнопка «Все заказы» теперь под полем ввода.");
+    if (cmd === "/logout") {
+      await db.rpc("tg_unbind_admin", { p_chat_id: msg.chat.id });
+      cfgCache = null;
+      return tg("sendMessage", { chat_id: msg.chat.id, text: "Чат отключён: заказы сюда больше не придут. Чтобы подключить снова, отправьте /admin и войдите.", reply_markup: { remove_keyboard: true } });
+    }
+    if (cmd === "/start" || cmd === "/menu" || cmd === "/admin") return showAdminPanel(msg.chat.id, "Панель заказов BOLAKAY. Кнопка «Все заказы» теперь под полем ввода.");
     if (cmd === "/orders" || text === ORDERS_BTN) return showAdminList(msg.chat.id, "all", 0);
     if (msg.reply_to_message) return onAdminReply(msg);
     return;
   }
   if (cmd === "/start") return onStart(c, msg, arg);
-  if (cmd === "/admin") return onAdminBind(msg, arg);
+  if (cmd === "/admin") return onAdminLogin(c, msg);
   if (msg.chat.type !== "private") return;
 
   const lang = await langFor(msg.chat.id, msg.from);
@@ -471,6 +489,60 @@ async function handleSetup(req: Request) {
   return json({ ok: true, bot_username: me.result.username });
 }
 
+// ---------- вход администратора внутри Telegram ----------
+async function hmac(key: BufferSource, msg: string) {
+  const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return new Uint8Array(await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(msg)));
+}
+/** Проверка подписи Telegram: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app */
+async function webAppUser(initData: string): Promise<TgUser | null> {
+  if (!TOKEN || !initData) return null;
+  const params = new URLSearchParams(initData);
+  const hash = params.get("hash");
+  if (!hash) return null;
+  params.delete("hash");
+  const check = [...params.entries()].map(([k, v]) => `${k}=${v}`).sort().join("\n");
+  const secret = await hmac(new TextEncoder().encode("WebAppData"), TOKEN);
+  const sign = await hmac(secret, check);
+  const hex = [...sign].map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (hex.length !== hash.length) return null;
+  let diff = 0;
+  for (let i = 0; i < hex.length; i++) diff |= hex.charCodeAt(i) ^ hash.charCodeAt(i);
+  if (diff !== 0) return null;
+  // Окно входа открыто не дольше часа: старую подпись повторно не используем
+  if (Date.now() / 1000 - Number(params.get("auth_date") ?? 0) > 3600) return null;
+  try {
+    return JSON.parse(params.get("user") ?? "null");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Привязка чата администратора. Нужны оба доказательства сразу:
+ *  — подпись Telegram: кто открыл окно входа (его личный чат и получит заказы);
+ *  — токен входа администратора, подтверждённый кодом из письма.
+ */
+async function handleBind(req: Request) {
+  const jwt = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  const { data: u } = await db.auth.getUser(jwt);
+  if (!u?.user) return json({ ok: false, error: "UNAUTHORIZED" }, 401);
+  const body = await req.json().catch(() => ({}));
+  const tgUser = await webAppUser(String(body.init_data ?? ""));
+  if (!tgUser?.id) return json({ ok: false, error: "BAD_TELEGRAM" }, 403);
+  let session: string | null = null;
+  try {
+    session = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).session_id ?? null;
+  } catch { /* без сессии вход не засчитываем */ }
+  if (!session) return json({ ok: false, error: "FORBIDDEN" }, 403);
+  // Личный чат с ботом имеет тот же номер, что и пользователь Telegram
+  const { data: ok } = await db.rpc("tg_bind_admin_user", { p_chat_id: tgUser.id, p_user: u.user.id, p_session: session });
+  if (ok !== true) return json({ ok: false, error: "FORBIDDEN" }, 403);
+  cfgCache = null;
+  await showAdminPanel(tgUser.id, ADMIN_WELCOME);
+  return json({ ok: true });
+}
+
 // ---------- роутинг ----------
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -479,6 +551,7 @@ Deno.serve(async (req) => {
   outbox = [];
   try {
     if (path === "/setup") return await handleSetup(req);
+    if (path === "/bind") return await handleBind(req);
 
     const c = await cfg();
     if (path === "/notify") {

@@ -31,6 +31,15 @@ export function initTelegramWebApp() {
   window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
 }
 
+/** Подпись Telegram для этой вкладки или null вне Telegram */
+export function webAppInitData(): string | null {
+  return typeof window === "undefined" ? null : storage()?.getItem(KEY) ?? null;
+}
+
+export function closeWebApp() {
+  postEvent("web_app_close");
+}
+
 /** Заказ с сайта появится в «Моих заказах» бота, и туда придут уведомления. Вне Telegram ничего не делает */
 export async function linkOrderToBot(token: string) {
   const initData = typeof window === "undefined" ? null : storage()?.getItem(KEY);
