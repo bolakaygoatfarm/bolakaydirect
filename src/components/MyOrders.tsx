@@ -30,7 +30,10 @@ export function MyOrders({ lang }: { lang: Lang }) {
     return (
       <div className="mt-8 text-center">
         <p className="font-bold">{d.my_orders_empty}</p>
-        <Link href={`/${lang}/points`} className="btn btn-primary mt-5">{d.hero_cta}</Link>
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          <Link href={`/${lang}/points`} className="btn btn-primary">{d.pick_point}</Link>
+          <Link href={`/${lang}#catalog`} className="btn btn-ghost">{d.product_list}</Link>
+        </div>
       </div>
     );
 

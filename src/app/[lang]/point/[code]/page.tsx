@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getCatalog, getFridge } from "@/lib/data";
 import { t } from "@/lib/i18n";
-import { pick } from "@/lib/format";
+import { pick, pointNo } from "@/lib/format";
 import { isLang, type Lang } from "@/lib/types";
 import { PointCatalog } from "@/components/PointCatalog";
 import { mapUrl } from "@/components/PointCard";
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/point/[cod
   if (!isLang(lang)) return {};
   const f = await getFridge(code);
   return {
-    title: f ? `${t(lang).point} ${f.name}` : t(lang).not_found_point,
+    title: f ? `${t(lang).point} ${pointNo(f.sort)} · ${f.name}` : t(lang).not_found_point,
     alternates: { canonical: `/${lang}/point/${code}`, languages: { uz: `/uz/point/${code}`, ru: `/ru/point/${code}`, en: `/en/point/${code}` } },
   };
 }
@@ -40,7 +40,7 @@ async function PointContent({ params }: { params: PageProps<"/[lang]/point/[code
     return (
       <div className="mx-auto max-w-5xl px-4 pb-16 pt-6">
         <section className="grain relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-5 text-white shadow-[var(--shadow-float)]">
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">{d.points_title}</p>
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">{d.point} — {pointNo(fridge.sort)}</p>
           <h1 className="font-display mt-1.5 text-2xl font-bold">{fridge.name}</h1>
           <p className="mt-2 text-sm text-white/85">{pick(fridge, "address", lang)}</p>
           {pick(fridge, "landmark", lang) && <p className="mt-1 text-sm text-white/75">{pick(fridge, "landmark", lang)}</p>}
@@ -62,7 +62,7 @@ async function PointContent({ params }: { params: PageProps<"/[lang]/point/[code
   return (
     <div className="mx-auto max-w-5xl px-4 pb-36 pt-6">
       <section className="grain relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-5 text-white shadow-[var(--shadow-float)]">
-        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">{d.points_title}</p>
+        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/70">{d.point} — {pointNo(fridge.sort)}</p>
         <h1 className="font-display mt-1.5 text-2xl font-bold">{fridge.name}</h1>
         <p className="mt-2 text-sm text-white/85">{pick(fridge, "address", lang)}</p>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">

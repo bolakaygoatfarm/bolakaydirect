@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProducts } from "@/lib/data";
 import { t } from "@/lib/i18n";
+import { sellPeriod } from "@/lib/format";
 import { isLang, type Category } from "@/lib/types";
 import { LogoMark } from "@/components/Logo";
 import { Eyebrow, Wave } from "@/components/Backdrop";
@@ -93,7 +94,7 @@ export default async function AboutPage({ params }: PageProps<"/[lang]/about">) 
                 {sellDays.map(([c, n]) => (
                   <li key={c} className="flex items-center justify-between gap-2 rounded-xl bg-milk px-3 py-2.5">
                     <span className="truncate font-bold">{d[`cat_${c}`]}</span>
-                    <span className="shrink-0 font-extrabold text-brand-700">{n} {d.days_short}</span>
+                    <span className="shrink-0 font-extrabold text-brand-700">{sellPeriod(n, lang)}</span>
                   </li>
                 ))}
               </ul>
@@ -131,7 +132,8 @@ export default async function AboutPage({ params }: PageProps<"/[lang]/about">) 
           <h2 className="font-display relative mx-auto mt-5 max-w-xl text-2xl font-bold sm:text-3xl">{d.cta_title}</h2>
           <p className="relative mx-auto mt-3 max-w-md text-white/80">{d.cta_text}</p>
           <div className="relative mt-8 flex flex-wrap justify-center gap-3">
-            <Link href={`/${lang}/points`} className="btn btn-butter px-6">{d.hero_cta} <Arrow /></Link>
+            <Link href={`/${lang}/points`} className="btn btn-butter px-6">{d.pick_point} <Arrow /></Link>
+            <Link href={`/${lang}#catalog`} className="btn px-6 bg-white/15 text-white ring-1 ring-white/30 hover:bg-white/25">{d.product_list}</Link>
           </div>
         </div>
       </section>

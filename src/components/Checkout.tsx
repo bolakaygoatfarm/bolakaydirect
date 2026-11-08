@@ -262,7 +262,7 @@ function Empty({ lang, text, code }: { lang: Lang; text: string; code?: string }
     <div className="mx-auto max-w-lg px-4 py-16 text-center">
       <p className="text-lg font-bold">{text}</p>
       <Link href={code ? `/${lang}/point/${code}` : `/${lang}/points`} className="btn btn-primary mt-6">
-        {code ? d.back_to_point : d.hero_cta}
+        {code ? d.back_to_point : d.pick_point}
       </Link>
     </div>
   );

@@ -22,6 +22,10 @@ export interface Product {
   storage_uz: string | null;
   storage_ru: string | null;
   storage_en?: string | null;
+  /** Короткая строка о вкусе под названием («Нежный вкус») */
+  tagline_uz?: string | null;
+  tagline_ru?: string | null;
+  tagline_en?: string | null;
   size_label: string;
   net_amount: number | null;
   net_unit: "ml" | "g" | null;

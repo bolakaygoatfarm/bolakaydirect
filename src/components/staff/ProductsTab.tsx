@@ -12,7 +12,7 @@ const CAT_RU: Record<Category, string> = { milk: "Молоко", yogurt: "Йог
 
 const EMPTY: Omit<Product, "id"> = {
   slug: "", category: "milk", name_uz: "", name_ru: "", name_en: "", description_uz: "", description_ru: "", description_en: "",
-  composition_uz: "", composition_ru: "", composition_en: "", storage_uz: "", storage_ru: "", storage_en: "", size_label: "",
+  composition_uz: "", composition_ru: "", composition_en: "", tagline_uz: "", tagline_ru: "", tagline_en: "", storage_uz: "", storage_ru: "", storage_en: "", size_label: "",
   net_amount: null, net_unit: "ml", price: 0, sell_days: 2, image_url: null, is_active: true, sort: 100,
 };
 
@@ -143,6 +143,9 @@ function ProductForm({ initial, onClose, onSaved }: { initial: Partial<Product>;
           <Field label={s("НДС, %")}><input className="field" type="number" min={0} max={100} value={p.vat_percent ?? 0} onChange={(e) => set("vat_percent", Number(e.target.value))} /></Field>
         </div>
         <p className="rounded-xl bg-brand-50 p-3 text-xs">{s("«Дней в продаже» = 2 → товар продаётся в день производства и на следующий день, на третий день автоматически скрывается.")}</p>
+        <Field label={s("Строка под названием (UZ)")}><input {...txt("tagline_uz")} maxLength={40} /></Field>
+        <Field label={s("Строка под названием (RU)")}><input {...txt("tagline_ru")} maxLength={40} placeholder={s("напр. Нежный вкус")} /></Field>
+        <Field label={s("Строка под названием (EN)")}><input {...txt("tagline_en")} maxLength={40} /></Field>
         <Field label={s("Описание (UZ)")}><textarea {...txt("description_uz")} /></Field>
         <Field label={s("Описание (RU)")}><textarea {...txt("description_ru")} /></Field>
         <Field label={s("Описание (EN)")}><textarea {...txt("description_en")} /></Field>

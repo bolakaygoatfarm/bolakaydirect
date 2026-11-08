@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { t } from "@/lib/i18n";
-import { pick } from "@/lib/format";
+import { pick, pointNo } from "@/lib/format";
 import type { Fridge, Lang } from "@/lib/types";
 
 import { mapUrlClient as mapUrl } from "./mapUrl";
@@ -13,7 +13,7 @@ export function PointCard({ fridge: f, lang }: { fridge: Fridge; lang: Lang }) {
     <article className="card flex flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-widest text-brand-600">{d.point}</p>
+          <p className="text-xs font-extrabold uppercase tracking-widest text-brand-600">{d.point} — {pointNo(f.sort)}</p>
           <h3 className="font-display mt-1 text-xl font-bold">{f.name}</h3>
         </div>
         {f.status === "planned" ? (

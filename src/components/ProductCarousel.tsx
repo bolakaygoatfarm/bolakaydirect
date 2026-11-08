@@ -132,7 +132,7 @@ export function ProductCarousel({ lang, products }: { lang: Lang; products: Prod
                 <span className="chip w-fit bg-brand-50 text-brand-700">{d[`cat_${p.category}`]}</span>
                 <h3 className="mt-3 text-lg font-extrabold leading-snug">{pick(p, "name", lang)}</h3>
                 <p className="mt-0.5 text-sm font-semibold text-muted">
-                  {sizeLabel(p.size_label, lang)} · {d.sell_days_label}: {p.sell_days} {d.days_short}
+                  {sizeLabel(p.size_label, lang)}{pick(p, "tagline", lang) && ` · ${pick(p, "tagline", lang)}`}
                 </p>
                 <div className="mt-auto flex items-end justify-between gap-3 pt-5">
                   <p className="font-display text-xl font-bold text-brand-700">{money(p.price, lang)}</p>
@@ -141,7 +141,7 @@ export function ProductCarousel({ lang, products }: { lang: Lang; products: Prod
                     tabIndex={i === active ? 0 : -1}
                     draggable={false}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white transition hover:bg-brand-700"
-                    aria-label={`${pick(p, "name", lang)} — ${d.hero_cta}`}
+                    aria-label={`${pick(p, "name", lang)} — ${d.pick_point}`}
                   >
                     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                       <path d="M7 17 17 7M9 7h8v8" />

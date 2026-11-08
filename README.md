@@ -167,7 +167,7 @@ Vercel → Project → **Settings → Domains** → добавьте `bolakay.uz
 
 ## База данных
 
-Миграции лежат в `supabase/migrations/` (0001–0017), демо-данные — в `supabase/seed.sql`.
+Миграции лежат в `supabase/migrations/` (0001–0018), демо-данные — в `supabase/seed.sql`.
 `0008_english.sql` добавляет английские поля (`name_en`, `description_en`, `composition_en`, `storage_en`, `address_en`, `landmark_en`);
 если английское поле пустое, сайт показывает русский текст.
 

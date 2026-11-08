@@ -18,6 +18,17 @@ export function sizeLabel(label: string | null | undefined, lang: Lang): string 
   return s.replace(/\s+/g, "\u00A0");
 }
 
+/** Срок продажи для покупателя: 90 дней → «3 мес.», остальное в днях */
+export function sellPeriod(days: number, lang: Lang): string {
+  if (days >= 60 && days % 30 === 0) return `${days / 30} ${{ uz: "oy", ru: "мес.", en: "mo" }[lang]}`;
+  return `${days} ${{ uz: "kun", ru: "дн.", en: "d" }[lang]}`;
+}
+
+/** «Точка — 01»: номер точки по порядку в сети */
+export function pointNo(sort: number | null | undefined): string {
+  return String(sort ?? 0).padStart(2, "0");
+}
+
 /** Заглушка из первоначальных настроек (+998 90 000 00 00) не показывается покупателям */
 export function realPhone(p: string | null | undefined): string | null {
   const d = (p ?? "").replace(/\D/g, "");
